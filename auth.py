@@ -40,7 +40,7 @@ app.secret_key = "e9f1a3b7c2e84d1d86e7df0c4a6789f120cbb89e5f843f3c74a8a776bc9ff2
 
 print("Initializing Firebase...")  # Debug print
 # Initialize Firebase
-cred = credentials.Certificate("ev-navigation-2e1b6-firebase-adminsdk-2erdd-6424f06ee8.json")
+cred = credentials.Certificate("ev-navigation--firebase-adminsdk-2erdd-6424f06ee8.json")#change this with the new one
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 print("Firebase initialized successfully!")  # Debug print

@@ -338,7 +338,7 @@ body {
             <table>
                 <thead>
                     <tr>
-                        <th>#</th>
+                        <th>S.No</th>
                         <th>Vehicle Number</th>
                         <th>Arrival Time</th>
                         <th>Estimated Departure Time</th>
@@ -740,6 +740,8 @@ body {
                         <button class="remove-btn" onclick="removeVehicle('${data.vehicle_id}')">Remove</button>
                     </td>
                 `;
+                // Sort the table after adding a new vehicle
+                sortVehicleTableByArrivalTime();
                 closeVehicleModal();
                 
                 // Show success message
@@ -1041,6 +1043,32 @@ body {
     document.getElementById('vehicleChargingType').addEventListener('change', updateChargingEstimate);
 
     window.initMap = initMap;
+
+    // Function to sort the vehicle table by arrival time
+    function sortVehicleTableByArrivalTime() {
+        const tableBody = document.querySelector(".dashboard-right table tbody");
+        const rows = Array.from(tableBody.querySelectorAll("tr"));
+
+        rows.sort((a, b) => {
+            // Get arrival time as string (e.g., "13:30")
+            const timeA = a.cells[2].textContent.trim();
+            const timeB = b.cells[2].textContent.trim();
+
+            // Convert to minutes since midnight for comparison
+            const [hA, mA] = timeA.split(":").map(Number);
+            const [hB, mB] = timeB.split(":").map(Number);
+            const minutesA = hA * 60 + mA;
+            const minutesB = hB * 60 + mB;
+
+            return minutesA - minutesB;
+        });
+
+        // Re-append sorted rows and update index column
+        rows.forEach((row, idx) => {
+            row.cells[0].textContent = idx + 1;
+            tableBody.appendChild(row);
+        });
+    }
 </script>
 
 </body>

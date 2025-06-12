@@ -915,32 +915,50 @@ body {
     // Function to initialize the display map on the dashboard
     function initDisplayMap() {
         const displayMapElement = document.getElementById('display-map');
-        console.log("Display Map Element:", displayMapElement); // Debug log
         if (!displayMapElement) {
-            console.error("Display map element not found!"); // Debug log
-            return; // Exit if the element is not found
+            console.error("Display map element not found!");
+            return;
         }
 
-        const stationLat = parseFloat('{{ station.latitude if station.latitude else 26.9124 }}');
-        const stationLng = parseFloat('{{ station.longitude if station.longitude else 75.7873 }}');
-        console.log("Station Lat:", stationLat, "Station Lng:", stationLng); // Debug log
+        // Use current coordinates from the form fields, not Jinja template
+        const stationLat = parseFloat(document.getElementById('latitude').value) || 26.9124;
+        const stationLng = parseFloat(document.getElementById('longitude').value) || 75.7873;
         const stationLocation = { lat: stationLat, lng: stationLng };
 
+        // If map exists, just update its center and marker
+        if (displayMap) {
+            displayMap.setCenter(stationLocation);
+            if (displayMarker) {
+                displayMarker.setPosition(stationLocation);
+            } else {
+                displayMarker = new google.maps.Marker({
+                    position: stationLocation,
+                    map: displayMap,
+                    draggable: false,
+                    title: "Charging Station Location"
+                });
+            }
+            google.maps.event.trigger(displayMap, 'resize');
+            return;
+        }
+
+        // Create new map if it doesn't exist
         displayMap = new google.maps.Map(displayMapElement, {
             center: stationLocation,
-            zoom: 15, // A closer zoom level for display
-            disableDefaultUI: true, // Hide all controls for a cleaner display
-            gestureHandling: 'none', // Disable map interaction
+            zoom: 15,
+            disableDefaultUI: true,
+            gestureHandling: 'none',
             zoomControl: false
         });
-        console.log("Display Map initialized:", displayMap); // Debug log
 
         displayMarker = new google.maps.Marker({
             position: stationLocation,
             map: displayMap,
-            draggable: false, // Not draggable on display map
-            title: "Charging Station Location",
+            draggable: false,
+            title: "Charging Station Location"
         });
+
+        google.maps.event.trigger(displayMap, 'resize');
     }
 
     // Existing openModal function, ensure it calls initMap if map not initialized
@@ -1021,6 +1039,8 @@ body {
     document.getElementById('initialBatteryLevel').addEventListener('input', updateChargingEstimate);
     document.getElementById('targetBatteryLevel').addEventListener('input', updateChargingEstimate);
     document.getElementById('vehicleChargingType').addEventListener('change', updateChargingEstimate);
+
+    window.initMap = initMap;
 </script>
 
 </body>

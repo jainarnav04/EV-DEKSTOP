@@ -1,9 +1,38 @@
 from flask import Flask, request, jsonify, render_template, session, redirect, url_for
 import firebase_admin
 from firebase_admin import credentials, firestore
-import math  # Add this at the top with other imports
+import math  
 import datetime # Import datetime module
 import random   # Import random module
+import os
+
+# Custom Exception Classes
+class InvalidUsage(Exception):
+    status_code = 400
+
+    def __init__(self, message, status_code=None, payload=None):
+        Exception.__init__(self)
+        self.message = message
+        if status_code is not None:
+            self.status_code = status_code
+        self.payload = payload
+
+    def to_dict(self):
+        rv = dict(self.payload or ())
+        rv['error'] = self.message
+        return rv
+
+class UnauthorizedError(InvalidUsage):
+    status_code = 403
+
+class MissingDataError(InvalidUsage):
+    status_code = 400
+
+class NotFoundError(InvalidUsage):
+    status_code = 404
+
+class CalculationError(InvalidUsage):
+    status_code = 500
 
 print("Starting application...")  # Debug print
 
@@ -35,12 +64,12 @@ def ev_charging_time(current_percent, target_percent, charger_power_kw, battery_
     logistic_scale = linear_full_charge_time / 7.43
     return unit_time * logistic_scale
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='static')
 app.secret_key = "e9f1a3b7c2e84d1d86e7df0c4a6789f120cbb89e5f843f3c74a8a776bc9ff2a5"  # Required for Flask sessions
 
 print("Initializing Firebase...")  # Debug print
 # Initialize Firebase
-cred = credentials.Certificate("ev-navigation--firebase-adminsdk-2erdd-6424f06ee8.json")#change this with the new one
+cred = credentials.Certificate("ev-navigation-2e1b6-firebase-adminsdk-2erdd-a461f83476.json")#change this with the new one
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 print("Firebase initialized successfully!")  # Debug print
@@ -79,8 +108,9 @@ def login_register():
 
         elif action == "register":
             name = data.get("name")
-            if not name:
-                return jsonify({"error": "Missing station name!"}), 400
+            email = data.get("email")
+            if not name or not email:
+                return jsonify({"error": "Missing station name or email!"}), 400
 
             if doc_ref.get().exists:
                 return jsonify({"error": "Station ID already exists!"}), 400
@@ -88,7 +118,8 @@ def login_register():
             doc_ref.set({
                 "station_id": station_id,
                 "access_key": access_key,
-                "name": name
+                "name": name,
+                "email": email
             })
             return jsonify({"message": "Registration successful!"}), 201
 
@@ -97,6 +128,42 @@ def login_register():
     except Exception as e:
         print(f"An error occurred in login_register: {e}")
         return jsonify({"error": f"An internal server error occurred: {str(e)}"}), 500
+
+@app.route("/reset-access-key", methods=["POST"])
+def reset_access_key():
+    data = request.json
+    station_id = data.get("station_id")
+    email = data.get("email")
+
+    if not station_id and not email:
+        return jsonify({"success": False, "message": "Missing Station ID or Email!"}), 400
+
+    doc_ref = db.collection("charging_stations").document(station_id)
+    doc = doc_ref.get()
+
+    if doc.exists:
+        station_data = doc.to_dict()
+        if station_data.get("email") == email:
+            print(f"Simulating sending reset link to {email} for Station ID: {station_id}")
+            # --- Email Sending Integration Placeholder ---
+            # In a real application, you would integrate with an email service here
+            # Example (using a hypothetical `send_email` function):
+            # try:
+            #     send_email(
+            #         to_email=email,
+            #         subject="Your EV-App Access Key Reset Request",
+            #         body=f"Hello,\n\nYou requested an access key reset for your station ID: {station_id}.\nYour access key is: {station_data['access_key']}\n\nPlease keep this secure.\n\nThanks,\nEV-App Team"
+            #     )
+            #     print(f"Successfully sent reset link to {email}")
+            # except Exception as email_exc:
+            #     print(f"Error sending email: {email_exc}")
+            #     # Consider returning an error here, or logging it and proceeding
+            # ---------------------------------------------
+            return jsonify({"success": True, "message": "If the Station ID and Email match, your access key has been sent to your email."}), 200
+        else:
+            return jsonify({"success": False, "message": "Station ID and Email do not match."}), 404
+    else:
+        return jsonify({"success": False, "message": "Station ID not found."}), 404
 
 @app.route("/dashboard")
 def dashboard():
@@ -133,30 +200,52 @@ def dashboard():
 @app.route("/update_station", methods=["POST"])
 def update_station():
     if "station_id" not in session:
-        return jsonify({"error": "Not logged in!"}), 403
+        raise UnauthorizedError("Not logged in!")
 
     data = request.json
     print("Update Station Data:", data)  # Debug print
     station_id = session["station_id"]
 
-    # Prepare update data from the form (ensure keys match what your JS sends)
+    # Validate required fields for update
+    required_fields = ["stationName", "operatorName", "chargingType", "location", "totalSlots", "availableSlots", "chargingRate"]
+    for field in required_fields:
+        if data.get(field) is None:
+            raise MissingDataError(f"Missing data for required field: {field}!")
+
+    try:
+        total_slots = int(data.get("totalSlots"))
+        available_slots = int(data.get("availableSlots"))
+        charging_rate = int(data.get("chargingRate"))
+    except ValueError:
+        raise InvalidUsage("Invalid data type for slots or charging rate. Must be integers.")
+
+    if available_slots > total_slots:
+        raise InvalidUsage("Available slots cannot be greater than total slots.")
+    if total_slots <= 0:
+        raise InvalidUsage("Total slots must be a positive number.")
+    if available_slots < 0:
+        raise InvalidUsage("Available slots cannot be negative.")
+    if charging_rate <= 0:
+        raise InvalidUsage("Charging rate must be a positive number.")
+
     update_data = {
         "name": data.get("stationName"),
         "operator": data.get("operatorName"),
-        "chargingType": data.get("chargingType") or "",  # Ensure it's always a string
+        "chargingType": data.get("chargingType"),
         "location": data.get("location"),
-        "total_slots": int(data.get("totalSlots")),
-        "available_slots": int(data.get("availableSlots")),
-        "charging_rate": int(data.get("chargingRate")),
-        "latitude": float(data.get("latitude")) if data.get("latitude") else None, # Add latitude
-        "longitude": float(data.get("longitude")) if data.get("longitude") else None # Add longitude
+        "total_slots": total_slots,
+        "available_slots": available_slots,
+        "charging_rate": charging_rate,
+        "latitude": float(data.get("latitude")) if data.get("latitude") else None,
+        "longitude": float(data.get("longitude")) if data.get("longitude") else None
     }
-    print("Update Data:", update_data)  # Debug print
+
+    doc_ref = db.collection("charging_stations").document(station_id)
+    if not doc_ref.get().exists:
+        raise NotFoundError("Station not found!")
 
     try:
-        doc_ref = db.collection("charging_stations").document(station_id)
         doc_ref.update(update_data)
-        # Verify the update
         updated_doc = doc_ref.get()
         print("Updated document data:", updated_doc.to_dict())  # Debug print
         return jsonify({"message": "Station details updated successfully!"}), 200
@@ -164,26 +253,45 @@ def update_station():
         import traceback
         print(f"An error occurred during station update: {e}")
         print(traceback.format_exc())
-        return jsonify({"error": str(e)}), 500
+        raise InvalidUsage(f"An error occurred while updating station details: {str(e)}", status_code=500)
 
 @app.route("/add_vehicle", methods=["POST"])
 def add_vehicle():
     if "station_id" not in session:
-        return jsonify({"error": "Not logged in!"}), 403
+        raise UnauthorizedError("Not logged in!")
 
     data = request.json
     print("Add Vehicle Data:", data)  # Debug print
     station_id = session["station_id"]
 
-    vehicle_number = data.get("vehicleNumber")
-    arrival_time_str = data.get("arrivalTime") # Store as string initially
-    chargingType = data.get("chargingType")
-    initial_battery_level = float(data.get("initialBatteryLevel"))
-    target_battery_level = float(data.get("targetBatteryLevel"))
-    battery_capacity = float(data.get("batteryCapacity", 60))  # Default to 60 kWh if not provided
+    # Validate required fields
+    required_fields = ["vehicleNumber", "arrivalTime", "chargingType", "initialBatteryLevel", "targetBatteryLevel", "batteryCapacity"]
+    for field in required_fields:
+        if data.get(field) is None:
+            raise MissingDataError(f"Missing data for required field: {field}!")
 
-    if not vehicle_number or not arrival_time_str: # Use arrival_time_str here
-        return jsonify({"error": "Missing vehicle number or arrival time!"}), 400
+    try:
+        vehicle_number = data.get("vehicleNumber")
+        arrival_time_str = data.get("arrivalTime")
+        chargingType = data.get("chargingType")
+        initial_battery_level = float(data.get("initialBatteryLevel"))
+        target_battery_level = float(data.get("targetBatteryLevel"))
+        battery_capacity = float(data.get("batteryCapacity"))
+    except ValueError:
+        raise InvalidUsage("Invalid data type for battery levels or capacity. Must be numbers.")
+
+    if not vehicle_number:
+        raise MissingDataError("Vehicle number cannot be empty!")
+    if initial_battery_level < 0 or initial_battery_level > 100:
+        raise InvalidUsage("Initial battery level must be between 0 and 100.")
+    if target_battery_level < 0 or target_battery_level > 100:
+        raise InvalidUsage("Target battery level must be between 0 and 100.")
+    if target_battery_level <= initial_battery_level:
+        raise InvalidUsage("Target battery level must be greater than initial battery level.")
+    if battery_capacity <= 0:
+        raise InvalidUsage("Battery capacity must be a positive number.")
+    if not chargingType:
+        raise MissingDataError("Charging Type is required!")
 
     try:
         # Calculate charging time and cost
@@ -198,7 +306,6 @@ def add_vehicle():
         wait_time_minutes = random.randint(10, 30)
 
         # Parse arrival_time string to datetime object (assuming format HH:MM)
-        # Get today's date to combine with time for datetime object
         today = datetime.date.today()
         arrival_datetime_obj = datetime.datetime.strptime(f"{today} {arrival_time_str}", "%Y-%m-%d %H:%M")
         
@@ -216,19 +323,18 @@ def add_vehicle():
         # Create vehicle data with charging calculations and wait time
         vehicle_data = {
             "vehicle_number": vehicle_number,
-            "arrival_time": arrival_time_str, # Store original arrival time string
-            "departure_time": departure_time_str, # Store calculated departure time string
+            "arrival_time": arrival_time_str,
+            "departure_time": departure_time_str,
             "chargingType": chargingType,
             "initial_battery_level": initial_battery_level,
             "target_battery_level": target_battery_level,
             "battery_capacity": battery_capacity,
             "charging_time_minutes": round(charging_time_min),
             "charging_cost": round(charging_cost),
-            "wait_time_minutes": wait_time_minutes, # Store the random wait time
+            "wait_time_minutes": wait_time_minutes,
             "timestamp": firestore.SERVER_TIMESTAMP
         }
         
-        # Set the new vehicle document
         vehicle_doc_ref.set(vehicle_data)
         
         return jsonify({
@@ -236,36 +342,45 @@ def add_vehicle():
             "vehicle_id": new_vehicle_id,
             "charging_time_minutes": round(charging_time_min),
             "charging_cost": round(charging_cost),
-            "wait_time_minutes": wait_time_minutes, # Return the random wait time
-            "departure_time": departure_time_str # Return the calculated departure time
+            "wait_time_minutes": wait_time_minutes,
+            "departure_time": departure_time_str
         }), 201
+    except CalculationError as e:
+        raise e # Re-raise CalculationError as is
     except Exception as e:
         import traceback
         print(f"An error occurred during add_vehicle: {e}")
         print(traceback.format_exc())
-        return jsonify({"error": str(e)}), 500
+        raise InvalidUsage(f"An error occurred while adding vehicle: {str(e)}", status_code=500)
 
 @app.route("/remove_vehicle", methods=["POST"])
 def remove_vehicle():
     if "station_id" not in session:
-        return jsonify({"error": "Not logged in!"}), 403
+        raise UnauthorizedError("Not logged in!")
 
     data = request.json
-    station_id = session["station_id"] # Get station_id from session
+    station_id = session["station_id"]
     vehicle_id = data.get("vehicle_id")
 
     if not vehicle_id:
-        return jsonify({"error": "Missing vehicle ID!"}), 400
+        raise MissingDataError("Missing vehicle ID!")
+
+    station_doc_ref = db.collection("charging_stations").document(station_id)
+    if not station_doc_ref.get().exists:
+        raise NotFoundError("Charging station not found!")
+
+    vehicle_doc_ref = station_doc_ref.collection("vehicles").document(vehicle_id)
+    if not vehicle_doc_ref.get().exists:
+        raise NotFoundError(f"Vehicle with ID {vehicle_id} not found under station {station_id}!")
 
     try:
-        # Delete vehicle from the subcollection under the specific station
-        db.collection("charging_stations").document(station_id).collection("vehicles").document(vehicle_id).delete()
+        vehicle_doc_ref.delete()
         return jsonify({"message": "Vehicle removed successfully!"}), 200
     except Exception as e:
         import traceback
         print(f"An error occurred during remove_vehicle: {e}")
         print(traceback.format_exc())
-        return jsonify({"error": str(e)}), 500
+        raise InvalidUsage(f"An error occurred while removing the vehicle: {str(e)}", status_code=500)
 
 def calculate_charging_time(initial_battery_level, target_battery_level, battery_capacity_kWh, charging_type):
     """
@@ -343,6 +458,12 @@ def calculate_charging_time(initial_battery_level, target_battery_level, battery
         charging_rate = charging_rates.get(charging_type, 15)
         charging_cost = actual_energy_consumed * charging_rate
         return charging_time_minutes, charging_cost
+
+@app.errorhandler(InvalidUsage)
+def handle_invalid_usage(error):
+    response = jsonify(error.to_dict())
+    response.status_code = error.status_code
+    return response
 
 if __name__ == "__main__":
     app.run(debug=True)

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Charging Station Dashboard</title>
-    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDTkgXCM1kVRjOEJkJRXA57V4jLe--5b_k&callback=initMap"></script>
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDTkgXCM1kVRjOEJkJRXA57V4jLe--5b_k&libraries=places&callback=initMap"></script>
     <style>
         /* Background similar to login page */
 html, body {
@@ -292,6 +292,7 @@ body {
     color: #333;
 }
 
+
 .vehiclemodal-content .form-group input,
 .vehiclemodal-content .form-group select {
     width: 100%;
@@ -300,12 +301,68 @@ body {
     border-radius: 5px;
     box-sizing: border-box; /* Include padding in width */
 }
-
+.chargingCost
+{
+    margin-bottom: 5px;
+    font-weight: bold;
+    color: #333;
+}
 .add-vehicle-btn {
     width: 100%;
     padding: 15px;
     font-size: 18px;
     margin-top: 20px;
+}
+
+.invalid-input {
+    border: 2px solid red !important;
+}
+
+.error-message {
+    color: red;
+    font-size: 0.85em;
+    margin-top: 5px;
+    margin-bottom: 10px;
+    text-align: left;
+    width: 100%;
+}
+
+.loading {
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+.spinner {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid #fff;
+    border-top: 2px solid transparent;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-left: 10px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+@media (max-width: 768px) {
+    .dashboard-container {
+        flex-direction: column;
+    }
+    .dashboard-left, .dashboard-right {
+        width: 100%;
+        border-radius: 0;
+    }
+    .dashboard-left {
+        padding: 20px;
+    }
+    .addbtn {
+        position: static;
+        margin: 10px auto;
+    }
 }
 
     </style>
@@ -384,10 +441,10 @@ body {
 
     
 
-<div id="vehicleModal" class="vehiclemodal">
+<div id="vehicleModal" class="vehiclemodal" role="dialog" aria-labelledby="vehicleModalTitle">
     <div class="vehiclemodal-content">
-        <span class="close" onclick="closeVehicleModal()">&times;</span>
-        <h2>Add Vehicle</h2>
+        <span class="close" onclick="closeVehicleModal()" aria-label="Close Add Vehicle Modal">&times;</span>
+        <h2 id="vehicleModalTitle">Add Vehicle</h2>
         
         <form id="addVehicleForm">
             <h3>Vehicle Details</h3>
@@ -429,22 +486,22 @@ body {
                 <input type="number" id="targetBatteryLevel" min="0" max="100" required>
             </div>
 
-            <div id="chargingEstimate" style="display: none; margin-top: 15px; padding: 10px; background: #f5f5f5; border-radius: 5px;">
-                <h4>Charging Estimate</h4>
-                <p>Estimated Time: <span id="estimatedTime">-</span> minutes</p>
+            <div class="chargingCost" id="chargingEstimate" style="display: none; margin-top: 15px; ; padding: 10px; background:rgba(0, 0, 0, .2); border-radius: 5px;">
+                <h4>Charging Estimates</h4>
+                <p>Estimated Time: <span id="estimatedTime">-</span></p>
                 <p>Estimated Cost: ₹<span id="estimatedCost">-</span></p>
             </div>
 
-            <button type="submit" class="save-btn add-vehicle-btn">Add Vehicle</button>
+            <button type="submit" class="save-btn add-vehicle-btn" aria-label="Add Vehicle">Add Vehicle</button>
         </form>
     </div>
 </div>
 
 
-        <div id="Modal" class="modal">
+        <div id="Modal" class="modal" role="dialog" aria-labelledby="updateModalTitle">
         <div class="modal-content">
-            <span class="close" onclick="closeModal()">&times;</span>
-            <h2>Update Charging Station Details</h2>
+            <span class="close" onclick="closeModal()" aria-label="Close Update Station Modal">&times;</span>
+            <h2 id="updateModalTitle">Update Charging Station Details</h2>
             
             <form id="updateForm">
                 <label>Station Name:</label>
@@ -476,13 +533,14 @@ body {
                 <input type="number" id="chargingRate" min="1" value="{{ station.charging_rate }}" placeholder="Charging rate" required>
 
                 <label>Location on Map:</label>
+                <input id="map-search" type="text" placeholder="Search for location..." style="width:100%;margin-bottom:10px;padding:8px;border-radius:4px;border:1px solid #ccc;">
                 <div id="map" style="height: 300px; width: 100%; margin-bottom: 20px; border-radius: 5px;"></div>
                 <input type="hidden" id="latitude" name="latitude" value="{{ station.latitude if station.latitude else '' }}">
                 <input type="hidden" id="longitude" name="longitude" value="{{ station.longitude if station.longitude else '' }}">
 
                 <div class="button-group">
-                    <button type="button" class="close-btn" onclick="closeModal()">Close</button>
-                    <button type="submit" class="save-btn">Save Changes</button>
+                    <button type="button" class="close-btn" onclick="closeModal()" aria-label="Close">Close</button>
+                    <button type="submit" class="save-btn" aria-label="Save Changes">Save Changes</button>
                 </div>
             </form>
         </div>
@@ -565,12 +623,16 @@ body {
         formChanged = false;
         // Update initial form data
         initialFormData = new FormData(form);
+        trapFocus(document.getElementById("Modal"));
     }
 
     // Target the save button specifically within the update form
-    document.querySelector("#updateForm .save-btn").addEventListener("click", function(event) {
+    document.querySelector("#updateForm .save-btn").addEventListener("click", async function(event) {
         event.preventDefault();
         formChanged = false;
+
+        const submitBtn = this; // Reference to the button
+        toggleLoadingState(submitBtn, true); // Show loading state
 
         let stationName = document.getElementById("stationName").value;
         let operatorName = document.getElementById("operatorName").value;
@@ -596,19 +658,20 @@ body {
 
         console.log("Sending station update data:", requestData);  // Debug log
 
-        fetch("/update_station", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(requestData)
-        })
-        .then(response => {
+        try {
+            const response = await fetch("/update_station", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(requestData)
+            });
+
             console.log("Raw response:", response);
             if (!response.ok) {
-                return response.text().then(text => { throw new Error(text) });
+                const text = await response.text();
+                throw new Error(text);
             }
-            return response.json();
-        })
-        .then(data => {
+            const data = await response.json();
+
             console.log("Parsed data:", data);
             if (data.message) {
                 // Update the displayed values directly
@@ -653,11 +716,12 @@ body {
             } else {
                 alert(data.error);
             }
-        })
-        .catch(error => {
+        } catch (error) {
             console.error("Update Error:", error);
-            alert("An error occurred while updating. Please try again.");
-        });
+            alert("An error occurred while updating. Please try again." + error.message);
+        } finally {
+            toggleLoadingState(submitBtn, false); // Hide loading state
+        }
     });
 
     // Close modal when clicking outside
@@ -676,6 +740,7 @@ body {
     // Open the Add Vehicle Modal
     function openVehicleModal() {
         document.getElementById("vehicleModal").style.display = "flex";
+        trapFocus(document.getElementById("vehicleModal"));
     }
 
     // Close the Add Vehicle Modal
@@ -683,15 +748,81 @@ body {
         document.getElementById("vehicleModal").style.display = "none";
     }
 
-    document.getElementById("addVehicleForm").addEventListener("submit", function(event) {
+    document.getElementById("addVehicleForm").addEventListener("submit", async function(event) {
         event.preventDefault();
 
-        let vehicleNumber = document.getElementById("vehicleNumber").value;
-        let arrivalTime = document.getElementById("arrivalTime").value;
-        let chargingType = document.getElementById("vehicleChargingType").value;
-        let initialBatteryLevel = document.getElementById("initialBatteryLevel").value;
-        let targetBatteryLevel = document.getElementById("targetBatteryLevel").value;
-        let batteryCapacity = document.getElementById("batteryCapacity").value;
+        const addVehicleBtn = this.querySelector('.add-vehicle-btn'); // Reference to the add vehicle button
+        toggleLoadingState(addVehicleBtn, true); // Show loading state
+
+        const vehicleNumberInput = document.getElementById("vehicleNumber");
+        const initialBatteryLevelInput = document.getElementById("initialBatteryLevel");
+        const targetBatteryLevelInput = document.getElementById("targetBatteryLevel");
+        const arrivalTimeInput = document.getElementById("arrivalTime");
+        const vehicleChargingTypeInput = document.getElementById("vehicleChargingType");
+        const batteryCapacityInput = document.getElementById("batteryCapacity");
+
+        const vehicleNumber = vehicleNumberInput.value.trim();
+        const arrivalTime = arrivalTimeInput.value;
+        const chargingType = vehicleChargingTypeInput.value;
+        const initialBatteryLevel = parseFloat(initialBatteryLevelInput.value);
+        const targetBatteryLevel = parseFloat(targetBatteryLevelInput.value);
+        const batteryCapacity = parseFloat(batteryCapacityInput.value);
+
+        const vehicleNumberRegex = /^[A-Z]{2}\d{2}[A-Z]{1,2}\d{4}$/;
+
+        // Clear previous error messages and styles
+        document.querySelectorAll('.error-message').forEach(el => el.remove());
+        vehicleNumberInput.classList.remove('invalid-input');
+        initialBatteryLevelInput.classList.remove('invalid-input');
+        targetBatteryLevelInput.classList.remove('invalid-input');
+        arrivalTimeInput.classList.remove('invalid-input');
+        vehicleChargingTypeInput.classList.remove('invalid-input');
+        batteryCapacityInput.classList.remove('invalid-input');
+
+        let isValid = true;
+
+        if (!vehicleNumber) {
+            displayError(vehicleNumberInput, "Vehicle number is required.");
+            isValid = false;
+        } else if (!vehicleNumberRegex.test(vehicleNumber)) {
+            displayError(vehicleNumberInput, "Invalid vehicle number format (e.g., MH12AB1234)");
+            isValid = false;
+        }
+
+        if (!arrivalTime) {
+            displayError(arrivalTimeInput, "Arrival time is required.");
+            isValid = false;
+        }
+
+        if (!chargingType) {
+            displayError(vehicleChargingTypeInput, "Charging type is required.");
+            isValid = false;
+        }
+
+        if (isNaN(initialBatteryLevel) || initialBatteryLevel < 0 || initialBatteryLevel > 100) {
+            displayError(initialBatteryLevelInput, "Please enter a valid initial battery level (0-100%).");
+            isValid = false;
+        }
+
+        if (isNaN(targetBatteryLevel) || targetBatteryLevel < 0 || targetBatteryLevel > 100) {
+            displayError(targetBatteryLevelInput, "Please enter a valid target battery level (0-100%).");
+            isValid = false;
+        }
+
+        if (initialBatteryLevel !== undefined && targetBatteryLevel !== undefined && targetBatteryLevel <= initialBatteryLevel) {
+            displayError(targetBatteryLevelInput, "Target battery level must be greater than initial battery level.");
+            isValid = false;
+        }
+
+        if (isNaN(batteryCapacity) || batteryCapacity <= 0) {
+            displayError(batteryCapacityInput, "Please enter a valid battery capacity (e.g., 60 kWh).");
+            isValid = false;
+        }
+
+        if (!isValid) {
+            toggleLoadingState(addVehicleBtn, false); // Hide loading state if validation fails
+            return; // Stop form submission if validation fails
+        }
 
         const requestData = {
             vehicleNumber: vehicleNumber,
@@ -702,13 +833,14 @@ body {
             batteryCapacity: batteryCapacity
         };
 
-        fetch("/add_vehicle", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(requestData)
-        })
-        .then(response => response.json())
-        .then(data => {
+        try {
+            const response = await fetch("/add_vehicle", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(requestData)
+            });
+            const data = await response.json();
+
             if (data.message) {
                 // Add the new vehicle to the table with charging information
                 const tableBody = document.querySelector(".dashboard-right table tbody");
@@ -737,7 +869,7 @@ body {
                     <td>${data.wait_time_minutes} min</td>
                     <td>₹${data.charging_cost}</td>
                     <td>
-                        <button class="remove-btn" onclick="removeVehicle('${data.vehicle_id}')">Remove</button>
+                        <button class="remove-btn" onclick="removeVehicle(\'${data.vehicle_id}\')" aria-label="Remove Vehicle ${vehicleNumber}">Remove</button>
                     </td>
                 `;
                 // Sort the table after adding a new vehicle
@@ -770,26 +902,33 @@ body {
             } else {
                 alert(data.error);
             }
-        })
-        .catch(error => {
+        } catch (error) {
             console.error("Add Vehicle Error:", error);
-            alert("An error occurred while adding vehicle. Please try again.");
-        });
+            alert("An error occurred while adding vehicle. Please try again." + error.message);
+        } finally {
+            toggleLoadingState(addVehicleBtn, false); // Hide loading state
+        }
     });
 
     // Function to remove a vehicle
-    function removeVehicle(vehicleId) {
+    async function removeVehicle(vehicleId) {
         if (!confirm("Are you sure you want to remove this vehicle?")) {
             return;
         }
 
-        fetch("/remove_vehicle", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ vehicle_id: vehicleId })
-        })
-        .then(response => response.json())
-        .then(data => {
+        const removeBtn = document.querySelector(`#vehicle-${vehicleId} .remove-btn`);
+        if (removeBtn) {
+            toggleLoadingState(removeBtn, true);
+        }
+
+        try {
+            const response = await fetch("/remove_vehicle", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ vehicle_id: vehicleId })
+            });
+            const data = await response.json();
+
             if (data.message) {
                 const vehicleRow = document.getElementById(`vehicle-${vehicleId}`);
                 if (vehicleRow) {
@@ -828,11 +967,14 @@ body {
             } else {
                 alert(data.error);
             }
-        })
-        .catch(error => {
+        } catch (error) {
             console.error("Remove Vehicle Error:", error);
-            alert("An error occurred while removing the vehicle. Please try again.");
-        });
+            alert("An error occurred while removing the vehicle. Please try again." + error.message);
+        } finally {
+            if (removeBtn) {
+                toggleLoadingState(removeBtn, false);
+            }
+        }
     }
 
     // This part ensures that if you navigate away with unsaved changes, you get a warning
@@ -912,6 +1054,35 @@ body {
             }
         });
         initDisplayMap(); // Added: Initialize the display map after the main map is ready
+
+        // Add Places Autocomplete search box
+        const input = document.getElementById('map-search');
+        if (input) {
+            const autocomplete = new google.maps.places.Autocomplete(input);
+            autocomplete.bindTo('bounds', map);
+
+            autocomplete.addListener('place_changed', function() {
+                const place = autocomplete.getPlace();
+                if (!place.geometry) {
+                    alert("No details available for input: '" + place.name + "'");
+                    return;
+                }
+
+                // If the place has a geometry, then present it on a map.
+                if (place.geometry.viewport) {
+                    map.fitBounds(place.geometry.viewport);
+                } else {
+                    map.setCenter(place.geometry.location);
+                    map.setZoom(17);
+                }
+                marker.setPosition(place.geometry.location);
+
+                // Update hidden latitude/longitude fields
+                document.getElementById('latitude').value = place.geometry.location.lat();
+                document.getElementById('longitude').value = place.geometry.location.lng();
+                formChanged = true;
+            });
+        }
     }
 
     // Function to initialize the display map on the dashboard
@@ -980,43 +1151,40 @@ body {
         const targetLevel = parseFloat(document.getElementById('targetBatteryLevel').value);
         const chargingType = document.getElementById('vehicleChargingType').value;
 
+        const chargingSpeeds = {
+            "AC Type 1": 7.4, "AC Type 2": 22.0, "CCS": 150.0, "CHAdeMO": 62.5 , "GB/T": 120.0
+        };
+        const chargingRates = {
+            "AC Type 1": 15, "AC Type 2": 18, "CCS": 25, "CHAdeMO": 25, "GB/T": 20
+        };
+        const chargingEfficiency = {
+            "AC Type 1": 0.85, "AC Type 2": 0.88, "CCS": 0.92, "CHAdeMO": 0.92, "GB/T": 0.90
+        };
+
         if (batteryCapacity && initialLevel && targetLevel && chargingType) {
             // Calculate charging time and cost
             // Apply similar logic as backend to avoid mathematical issues for 100%
-            if (targetLevel === 100) {
-                targetLevel = 99.9; // Adjust target to prevent issues in logistic calculation
+            let adjustedTargetLevel = targetLevel;
+            let adjustedInitialLevel = initialLevel;
+
+            if (adjustedTargetLevel === 100) {
+                adjustedTargetLevel = 99.9; // Adjust target to prevent issues in logistic calculation
             }
-            if (initialLevel === 0) {
-                initialLevel = 0.1; // Adjust initial to prevent issues
+            if (adjustedInitialLevel === 0) {
+                adjustedInitialLevel = 0.1; // Adjust initial to prevent issues
             }
 
-            const batteryPercentageToCharge = targetLevel - initialLevel;
+            const batteryPercentageToCharge = adjustedTargetLevel - adjustedInitialLevel;
             const energyNeededKwh = (batteryPercentageToCharge / 100) * batteryCapacity;
-
-            // Charging speeds in kW
-            const chargingSpeeds = {
-                "AC Type 1": 7.4,
-                "AC Type 2": 22.0,
-                "CCS": 150.0,
-                "CHAdeMO": 150.0,
-                "GB/T": 120.0
-            };
-
-            // Charging rates in ₹/kWh
-            const chargingRates = {
-                "AC Type 1": 15,
-                "AC Type 2": 18,
-                "CCS": 25,
-                "CHAdeMO": 25,
-                "GB/T": 20
-            };
 
             const chargingSpeed = chargingSpeeds[chargingType] || 7.4;
             const chargingRate = chargingRates[chargingType] || 15;
+            const efficiency = chargingEfficiency[chargingType] || 0.85; // Get efficiency based on type
 
             const chargingTimeHours = energyNeededKwh / chargingSpeed;
             const chargingTimeMinutes = chargingTimeHours * 60;
-            const chargingCost = energyNeededKwh * chargingRate;
+            const actualEnergyConsumed = energyNeededKwh / efficiency; // Use type-specific efficiency
+            const chargingCost = actualEnergyConsumed * chargingRate;
 
             // Update the estimate display
             let estimatedTimeMinutes = Math.round(chargingTimeMinutes);
@@ -1069,6 +1237,77 @@ body {
             tableBody.appendChild(row);
         });
     }
+
+    // Helper function to show/hide loading spinner and disable/enable button
+    function toggleLoadingState(button, isLoading) {
+        console.log(`toggleLoadingState called for button: ${button.id || button.className}, isLoading: ${isLoading}`);
+        if (isLoading) {
+            button.classList.add('loading');
+            button.setAttribute('disabled', 'true');
+            const spinnerSpan = document.createElement('span');
+            spinnerSpan.className = 'spinner';
+            button.appendChild(spinnerSpan);
+        } else {
+            button.classList.remove('loading');
+            button.removeAttribute('disabled');
+            const spinner = button.querySelector('.spinner');
+            if (spinner) {
+                spinner.remove();
+            }
+        }
+    }
+
+    function trapFocus(modal) {
+        const focusableElements = modal.querySelectorAll('button, [href], input, select, textarea');
+        const firstElement = focusableElements[0];
+        const lastElement = focusableElements[focusableElements.length - 1];
+
+        modal.addEventListener('keydown', function(e) {
+            if (e.key === 'Tab') {
+                if (e.shiftKey) { // Shift + Tab
+                    if (document.activeElement === firstElement || document.activeElement === modal) {
+                        e.preventDefault();
+                        lastElement.focus();
+                    }
+                } else { // Tab
+                    if (document.activeElement === lastElement) {
+                        e.preventDefault();
+                        firstElement.focus();
+                    }
+                }
+            } else if (e.key === 'Escape') {
+                // Optionally close modal on Escape key
+                if (modal.id === 'vehicleModal') {
+                    closeVehicleModal();
+                } else if (modal.id === 'Modal') {
+                    closeModal();
+                }
+            }
+        });
+    }
+
+    document.getElementById("Modal").addEventListener('transitionend', function() {
+        if (this.style.display === 'flex') {
+            trapFocus(this);
+            // Optionally focus the first focusable element when modal opens
+            const firstFocusable = this.querySelector('button, [href], input, select, textarea');
+            if (firstFocusable) {
+                firstFocusable.focus();
+            }
+        }
+    });
+
+    document.getElementById("vehicleModal").addEventListener('transitionend', function() {
+        if (this.style.display === 'flex') {
+            trapFocus(this);
+            // Optionally focus the first focusable element when modal opens
+            const firstFocusable = this.querySelector('button, [href], input, select, textarea');
+            if (firstFocusable) {
+                firstFocusable.focus();
+            }
+        }
+    });
+
 </script>
 
 </body>

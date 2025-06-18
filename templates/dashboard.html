@@ -378,7 +378,7 @@ body {
             <p id="charging-type-display"><strong>Charging Type:</strong> {{ station.chargingType }}</p>
             <p id="location-display"><strong>Location:</strong> {{ station.location }}</p>
             <p id="total-slots-display"><strong>Total Slots:</strong> {{ station.total_slots }}</p>
-            <p id="available-slots-display"><strong>Available Slots:</strong> {{ station.available_slots }}</p>
+
             <p id="charging-rate-display"><strong>Charging Rate:</strong> ₹{{ station.charging_rate }} per kWh</p>
 
             <div id="slot-warning" style="display: none; color: #ff4444; margin: 10px 0; padding: 10px; background-color: #ffebee; border-radius: 5px;">
@@ -552,8 +552,6 @@ body {
                 <label>Total Slots:</label>
                 <input type="number" id="totalSlots" min="1" value="{{ station.total_slots }}" placeholder="Number of slots" required>
 
-                <label>Available Slots:</label>
-                <input type="number" id="availableSlots" min="0" value="{{ station.available_slots }}" placeholder="Available slots" required>
 
                 <label>Charging Rate (₹/kWh):</label>
                 <input type="number" id="chargingRate" min="1" value="{{ station.charging_rate }}" placeholder="Charging rate" required>
@@ -594,7 +592,6 @@ body {
             'CCS': 25,
             'CHAdeMO': 25,
             'GB/T': 20,
-            'Tesla Supercharger': 30
         };
         
         const selectedType = selectElement.value;
@@ -665,7 +662,6 @@ body {
         let chargingType = document.getElementById("stationChargingType").value;
         let location = document.getElementById("location").value;
         let totalSlots = document.getElementById("totalSlots").value;
-        let availableSlots = document.getElementById("availableSlots").value;
         let chargingRate = document.getElementById("chargingRate").value;
         let latitude = document.getElementById("latitude").value;
         let longitude = document.getElementById("longitude").value;
@@ -676,7 +672,6 @@ body {
             chargingType: chargingType,
             location: location,
             totalSlots: totalSlots,
-            availableSlots: availableSlots,
             chargingRate: chargingRate,
             latitude: latitude,
             longitude: longitude
@@ -706,7 +701,6 @@ body {
                 document.getElementById("charging-type-display").innerHTML = `<strong>Charging Type:</strong> ${chargingType}`;
                 document.getElementById("location-display").innerHTML = `<strong>Location:</strong> ${location}`;
                 document.getElementById("total-slots-display").innerHTML = `<strong>Total Slots:</strong> ${totalSlots}`;
-                document.getElementById("available-slots-display").innerHTML = `<strong>Available Slots:</strong> ${availableSlots}`;
                 document.getElementById("charging-rate-display").innerHTML = `<strong>Charging Rate:</strong> ₹${chargingRate} per kWh`;
 
                 // Close the modal
@@ -796,12 +790,6 @@ body {
                 console.error("Could not find table body elements for refresh.");
             }
 
-            // Update available slots display (as it's also on the dashboard page)
-            const availableSlotsDisplay = document.getElementById("available-slots-display");
-            const newAvailableSlotsDisplay = doc.getElementById("available-slots-display");
-            if (availableSlotsDisplay && newAvailableSlotsDisplay) {
-                availableSlotsDisplay.innerHTML = newAvailableSlotsDisplay.innerHTML;
-            }
 
             // Update slot warning
             const slotWarning = document.getElementById("slot-warning");

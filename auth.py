@@ -225,7 +225,11 @@ def dashboard():
             queue = slot_queues.get(slot, [])
             # Sort vehicles by arrival_time (parsed as datetime)
             queue_sorted = sorted(queue, key=lambda v: datetime.strptime(v['arrival_time'], '%Y-%m-%d %H:%M')) if queue else []
-            prev_end = now
+            if queue_sorted:
+                first_arrival = datetime.strptime(queue_sorted[0]['arrival_time'], '%Y-%m-%d %H:%M')
+                prev_end = min(now, first_arrival)
+            else:
+                prev_end = now
             print(f"Slot {slot} queue:")
             for idx, v in enumerate(queue_sorted):
                 arrival_time = v.get('arrival_time')
@@ -237,7 +241,6 @@ def dashboard():
                         arrival_dt = now
                 else:
                     arrival_dt = arrival_time or now
-                # Charging starts after previous vehicle finishes or on arrival, whichever is later
                 start_dt = max(arrival_dt, prev_end)
                 end_dt = start_dt + timedelta(minutes=int(charging_time) if charging_time is not None else 0)
                 print(f"  Vehicle {v.get('vehicle_number','?')} (id={v.get('id')}) arrives {arrival_dt}, starts {start_dt}, ends {end_dt}")
@@ -247,8 +250,11 @@ def dashboard():
             print(f"  Slot {slot} free at: {slot_free_time[slot]}")
         print("Slot free times:", slot_free_time)
 
-        # Pass slot_free_time to the template for display if needed
-        return render_template("dashboard.html", station=station_data, vehicles=vehicles, slot_free_time=slot_free_time)  # Pass vehicles data
+        # Dynamically calculate available slots just before rendering
+        total_slots = station_data.get('totalSlots') or station_data.get('total_slots')
+        charging_count = sum(1 for v in vehicles if v.get('status', '').upper() == 'CHARGING')
+        available_slots = max(int(total_slots) - charging_count, 0) if total_slots else 0
+        return render_template("dashboard.html", station=station_data, vehicles=vehicles, slot_free_time=slot_free_time, available_slots=available_slots)  # Pass vehicles data and dynamic available_slots
     else:
         return "Error: Station not found", 404
 
@@ -263,24 +269,18 @@ def update_station():
     station_id = session["station_id"]
 
     # Validate required fields for update
-    required_fields = ["stationName", "operatorName", "chargingType", "location", "totalSlots", "availableSlots", "chargingRate"]
+    required_fields = ["stationName", "operatorName", "chargingType", "location", "totalSlots", "chargingRate"]
     for field in required_fields:
         if data.get(field) is None:
             raise MissingDataError(f"Missing data for required field: {field}!")
 
     try:
         total_slots = int(data.get("totalSlots"))
-        available_slots = int(data.get("availableSlots"))
         charging_rate = int(data.get("chargingRate"))
     except ValueError:
         raise InvalidUsage("Invalid data type for slots or charging rate. Must be integers.")
-
-    if available_slots > total_slots:
-        raise InvalidUsage("Available slots cannot be greater than total slots.")
     if total_slots <= 0:
         raise InvalidUsage("Total slots must be a positive number.")
-    if available_slots < 0:
-        raise InvalidUsage("Available slots cannot be negative.")
     if charging_rate <= 0:
         raise InvalidUsage("Charging rate must be a positive number.")
 
@@ -408,6 +408,12 @@ def add_vehicle():
         slot_number = assigned_slot_number
         print(f"Assigned slot: {slot_number}, wait time: {wait_time_minutes} min, status: {vehicle_status}")
 
+        # Store station wait time in Firestore
+        try:
+            station_doc_ref.update({"latest_wait_time_minutes": wait_time_minutes})
+        except Exception as e:
+            print(f"Warning: Could not update latest_wait_time_minutes for station {station_id}: {e}")
+
         # Calculate estimated departure time
         total_duration_minutes = charging_time_min + wait_time_minutes
         departure_datetime_obj = arrival_datetime_obj + timedelta(minutes=total_duration_minutes)
@@ -437,14 +443,11 @@ def add_vehicle():
         }
         
         vehicle_doc_ref.set(vehicle_data)
-        # Decrement available_slots in the station document
-        station_snapshot = station_doc_ref.get()
-        if station_snapshot.exists:
-            station_data = station_snapshot.to_dict()
-            available_slots = station_data.get('available_slots', 0)
-            new_available_slots = max(available_slots - 1, 0)
-            station_doc_ref.update({'available_slots': new_available_slots})
-        
+        # Calculate available slots dynamically (do not update Firestore)
+        vehicles_ref = station_doc_ref.collection("vehicles")
+        charging_count = sum(1 for doc in vehicles_ref.stream() if doc.to_dict().get('status', '').upper() == 'CHARGING')
+        available_slots = max(total_slots - charging_count, 0) if total_slots else 0
+
         return jsonify({
             "message": "Vehicle added successfully!", 
             "vehicle_id": new_vehicle_id,
@@ -452,7 +455,7 @@ def add_vehicle():
             "charging_cost": round(charging_cost),
             "wait_time_minutes": wait_time_minutes,
             "departure_time": departure_time_full,
-            "available_slots": new_available_slots if station_snapshot.exists else None
+            "available_slots": available_slots
         }), 201
     except CalculationError as e:
         raise e # Re-raise CalculationError as is
@@ -483,21 +486,12 @@ def remove_vehicle():
         raise NotFoundError(f"Vehicle with ID {vehicle_id} not found under station {station_id}!")
 
     try:
-        # Fetch the vehicle's data before deleting
-        vehicle_doc = vehicle_doc_ref.get()
-        incremented = False
-        if vehicle_doc.exists:
-            vehicle_data = vehicle_doc.to_dict()
-            # Only increment available_slots if vehicle was charging (not just waiting/queued)
-            if vehicle_data.get('status', '').upper() == 'CHARGING':
-                station_snapshot = station_doc_ref.get()
-                if station_snapshot.exists:
-                    station_data = station_snapshot.to_dict()
-                    available_slots = station_data.get('available_slots', 0)
-                    station_doc_ref.update({'available_slots': available_slots + 1})
-                    incremented = True
+        # Remove the vehicle
         vehicle_doc_ref.delete()
-        return jsonify({"message": "Vehicle removed successfully!", "available_slots_incremented": incremented}), 200
+        # Calculate available slots dynamically after removal (do not update Firestore)
+        vehicles_ref = station_doc_ref.collection("vehicles")
+        charging_count = sum(1 for doc in vehicles_ref.stream() if doc.to_dict().get('status', '').upper() == 'CHARGING')
+        return jsonify({"message": "Vehicle removed successfully!"}), 200
     except Exception as e:
         import traceback
         print(f"An error occurred during remove_vehicle: {e}")

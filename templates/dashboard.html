@@ -33,17 +33,17 @@ body {
 
 /* Left Side: Charging Station Details */
 .dashboard-left {
-    width: 40%;
+    width: 28%;
     background: #4CAF50; /* Green box */
-    padding: 50px;
+    padding: 32px 24px;
     color: white;
-    border-radius: 0px 150px 150px 0px;
+    border-radius: 0px 120px 120px 0px;
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
     text-align: left;
     box-shadow: 0 0 30px rgba(0, 0, 0, .2);
-    overflow-y: auto; /* Added scroll for left dashboard content */
+    overflow-y: auto;
 }
 
 .dashboard-left h2 {
@@ -59,11 +59,13 @@ body {
 
 /* Right Side: Vehicle List */
 .dashboard-right {
-    width: 60%;
-    padding: 20px;
-    background: white(132, 137, 139);
+    width: 72%;
+    padding: 32px 32px 32px 24px;
+    background: #fff;
     color: black;
-    border-radius: 0 10px 10px 0;
+    border-radius: 0 16px 16px 0;
+    min-height: 100vh;
+    box-sizing: border-box;
 }
 
 .dashboard-right table {
@@ -379,6 +381,10 @@ body {
             <p id="available-slots-display"><strong>Available Slots:</strong> {{ station.available_slots }}</p>
             <p id="charging-rate-display"><strong>Charging Rate:</strong> ₹{{ station.charging_rate }} per kWh</p>
 
+            <div id="slot-warning" style="display: none; color: #ff4444; margin: 10px 0; padding: 10px; background-color: #ffebee; border-radius: 5px;">
+                <strong>Warning:</strong> No slots available. New vehicles will be added to the waiting list.
+            </div>
+
             <div id="display-map" style="height: 200px; width: 100%; margin-top: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);"></div>
 
             <div class="btn-container">
@@ -387,8 +393,11 @@ body {
             </div>
         </div>
 
-        <!-- Right: List of Vehicles -->
+        <!-- Station Queue Section -->
         <div class="dashboard-right">
+            <h2>Station Queue</h2>
+            <div id="station-queue-container"></div>
+            <hr>
             <h2>Currently Charging Vehicles</h2>
             <button onclick="openVehicleModal()" class="addbtn">Add Vehicle</button>
 
@@ -396,8 +405,9 @@ body {
                 <thead>
                     <tr>
                         <th>S.No</th>
+                        <th>Slot Number</th>
                         <th>Vehicle Number</th>
-                        <th>Arrival Time</th>
+                        <th>Estimated Arrival Time</th>
                         <th>Estimated Departure Time</th>
                         <th>Charging Type</th>
                         <th>Battery Capacity</th>
@@ -405,6 +415,7 @@ body {
                         <th>Target Battery</th>
                         <th>Charging Time</th>
                         <th>Wait Time</th>
+                        <th>Current Status</th>
                         <th>Cost</th>
                         <th>Actions</th>
                     </tr>
@@ -413,6 +424,7 @@ body {
                     {% for vehicle in vehicles %}
                     <tr id="vehicle-{{ vehicle.id }}">
                         <td>{{ loop.index }}</td>
+                        <td>{% if vehicle.slot_number %}{{ vehicle.slot_number }}{% else %}N/A{% endif %}</td>
                         <td>{{ vehicle.vehicle_number }}</td>
                         <td>{{ vehicle.arrival_time }}</td>
                         <td>{{ vehicle.departure_time }}</td>
@@ -428,6 +440,13 @@ body {
                             {% endif %}
                         </td>
                         <td>{{ vehicle.wait_time_minutes }} min</td>
+                        <td>
+                                {% if vehicle.status %}
+                                    {{ vehicle.status }}
+                                {% else %}
+                                    N/A
+                                {% endif %}
+                            </td>
                         <td>₹{{ vehicle.charging_cost }}</td>
                         <td>
                             <button class="remove-btn" onclick="removeVehicle('{{ vehicle.id }}')">Remove</button>
@@ -439,7 +458,14 @@ body {
         </div>
     </div>
 
-    
+    <!-- Booking Result Modal -->
+    <div id="bookingResultModal" class="modal" style="display:none;">
+        <div class="modal-content">
+            <span class="close" onclick="closeBookingResultModal()" aria-label="Close Result Modal">&times;</span>
+            <h2>Booking Result</h2>
+            <div id="booking-result-details"></div>
+        </div>
+    </div>
 
 <div id="vehicleModal" class="vehiclemodal" role="dialog" aria-labelledby="vehicleModalTitle">
     <div class="vehiclemodal-content">
@@ -748,6 +774,52 @@ body {
         document.getElementById("vehicleModal").style.display = "none";
     }
 
+    // Add this function to dynamically refresh the vehicle table
+    async function refreshVehicleTable() {
+        try {
+            // Fetch the latest vehicles data from the dashboard endpoint
+            const response = await fetch("/dashboard"); // Assuming this endpoint returns the full dashboard HTML, or we can make a dedicated /api/vehicles endpoint
+            const html = await response.text();
+
+            // Create a temporary DOM element to parse the HTML
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+
+            // Find the table body from the parsed HTML
+            const newTableBody = doc.querySelector(".dashboard-right table tbody");
+            const currentTableBody = document.querySelector(".dashboard-right table tbody");
+
+            if (newTableBody && currentTableBody) {
+                // Replace the old table body with the new one
+                currentTableBody.innerHTML = newTableBody.innerHTML;
+            } else {
+                console.error("Could not find table body elements for refresh.");
+            }
+
+            // Update available slots display (as it's also on the dashboard page)
+            const availableSlotsDisplay = document.getElementById("available-slots-display");
+            const newAvailableSlotsDisplay = doc.getElementById("available-slots-display");
+            if (availableSlotsDisplay && newAvailableSlotsDisplay) {
+                availableSlotsDisplay.innerHTML = newAvailableSlotsDisplay.innerHTML;
+            }
+
+            // Update slot warning
+            const slotWarning = document.getElementById("slot-warning");
+            const newSlotWarning = doc.getElementById("slot-warning");
+            if (slotWarning && newSlotWarning) {
+                slotWarning.style.display = newSlotWarning.style.display;
+                slotWarning.innerHTML = newSlotWarning.innerHTML; // To get updated text if any
+            }
+
+
+            console.log("Vehicle table refreshed successfully.");
+
+        } catch (error) {
+            console.error("Error refreshing vehicle table:", error);
+            alert("Failed to refresh vehicle list. Please refresh the page manually.");
+        }
+    }
+
     document.getElementById("addVehicleForm").addEventListener("submit", async function(event) {
         event.preventDefault();
 
@@ -842,40 +914,11 @@ body {
             const data = await response.json();
 
             if (data.message) {
-                // Add the new vehicle to the table with charging information
-                const tableBody = document.querySelector(".dashboard-right table tbody");
-                const newRow = tableBody.insertRow();
-                newRow.id = `vehicle-${data.vehicle_id}`;
+                closeVehicleModal(); // Close modal
                 
-                let chargingTimeDisplay;
-                if (data.charging_time_minutes >= 60) {
-                    const hours = Math.floor(data.charging_time_minutes / 60);
-                    const minutes = data.charging_time_minutes % 60;
-                    chargingTimeDisplay = `${hours} hrs ${minutes} min`;
-                } else {
-                    chargingTimeDisplay = `${data.charging_time_minutes} min`;
-                }
+                // Refresh the entire table after a successful add
+                await refreshVehicleTable();
 
-                newRow.innerHTML = `
-                    <td>${tableBody.rows.length}</td>
-                    <td>${vehicleNumber}</td>
-                    <td>${arrivalTime}</td>
-                    <td>${data.departure_time}</td>
-                    <td>${chargingType}</td>
-                    <td>${batteryCapacity} kWh</td>
-                    <td>${initialBatteryLevel}%</td>
-                    <td>${targetBatteryLevel}%</td>
-                    <td>${chargingTimeDisplay}</td>
-                    <td>${data.wait_time_minutes} min</td>
-                    <td>₹${data.charging_cost}</td>
-                    <td>
-                        <button class="remove-btn" onclick="removeVehicle(\'${data.vehicle_id}\')" aria-label="Remove Vehicle ${vehicleNumber}">Remove</button>
-                    </td>
-                `;
-                // Sort the table after adding a new vehicle
-                sortVehicleTableByArrivalTime();
-                closeVehicleModal();
-                
                 // Show success message
                 const successMessage = document.createElement('div');
                 successMessage.style.cssText = `
@@ -903,24 +946,15 @@ body {
                 alert(data.error);
             }
         } catch (error) {
-            console.error("Add Vehicle Error:", error);
-            alert("An error occurred while adding vehicle. Please try again." + error.message);
+            console.error("Error:", error);
+            alert("An error occurred while adding the vehicle. Please try again.");
         } finally {
             toggleLoadingState(addVehicleBtn, false); // Hide loading state
         }
     });
 
-    // Function to remove a vehicle
+    // Update removeVehicle function to handle slot updates and refresh table
     async function removeVehicle(vehicleId) {
-        if (!confirm("Are you sure you want to remove this vehicle?")) {
-            return;
-        }
-
-        const removeBtn = document.querySelector(`#vehicle-${vehicleId} .remove-btn`);
-        if (removeBtn) {
-            toggleLoadingState(removeBtn, true);
-        }
-
         try {
             const response = await fetch("/remove_vehicle", {
                 method: "POST",
@@ -930,21 +964,10 @@ body {
             const data = await response.json();
 
             if (data.message) {
-                const vehicleRow = document.getElementById(`vehicle-${vehicleId}`);
-                if (vehicleRow) {
-                    console.log(`Attempting to remove row with ID: vehicle-${vehicleId}`); // Debug log
-                    vehicleRow.remove(); // Remove the row from the table
-                    
-                    // Reindex the remaining rows
-                    const tableBody = document.querySelector(".dashboard-right table tbody");
-                    const rows = tableBody.getElementsByTagName("tr");
-                    for (let i = 0; i < rows.length; i++) {
-                        rows[i].cells[0].textContent = i + 1; // Update the index cell
-                    }
-                } else {
-                    console.error(`Could not find row with ID: vehicle-${vehicleId}`); // Debug log
-                }
+                // Refresh the entire table after a successful remove
+                await refreshVehicleTable();
 
+                // Show success message
                 const successMessage = document.createElement('div');
                 successMessage.style.cssText = `
                     position: fixed;
@@ -963,17 +986,10 @@ body {
                 setTimeout(() => {
                     successMessage.remove();
                 }, 3000);
-
-            } else {
-                alert(data.error);
             }
         } catch (error) {
-            console.error("Remove Vehicle Error:", error);
-            alert("An error occurred while removing the vehicle. Please try again." + error.message);
-        } finally {
-            if (removeBtn) {
-                toggleLoadingState(removeBtn, false);
-            }
+            console.error("Error:", error);
+            alert("An error occurred while removing the vehicle. Please try again.");
         }
     }
 
@@ -988,7 +1004,8 @@ body {
     document.addEventListener('DOMContentLoaded', function() {
         document.getElementById("Modal").style.display = "none";
         // Debug log (already present) check for google and google.maps
-        console.log("DOMContentLoaded: google defined?", typeof google !== 'undefined', "google.maps defined?", typeof google.maps !== 'undefined'); 
+        console.log("DOMContentLoaded: google defined?", typeof google !== 'undefined', "google.maps defined?", typeof google.maps !== 'undefined');
+        refreshVehicleTable(); // Initial load of the table after DOM is ready
     });
 
     let map, marker;
@@ -1152,7 +1169,7 @@ body {
         const chargingType = document.getElementById('vehicleChargingType').value;
 
         const chargingSpeeds = {
-            "AC Type 1": 7.4, "AC Type 2": 22.0, "CCS": 150.0, "CHAdeMO": 62.5 , "GB/T": 120.0
+            "AC Type 1": 7.4, "AC Type 2": 22.0, "CCS": 150.0, "CHAdeMO": 62.5, "GB/T": 120.0
         };
         const chargingRates = {
             "AC Type 1": 15, "AC Type 2": 18, "CCS": 25, "CHAdeMO": 25, "GB/T": 20
@@ -1160,33 +1177,76 @@ body {
         const chargingEfficiency = {
             "AC Type 1": 0.85, "AC Type 2": 0.88, "CCS": 0.92, "CHAdeMO": 0.92, "GB/T": 0.90
         };
+        const k = 1.6; // Logistic model constant, matches backend
 
-        if (batteryCapacity && initialLevel && targetLevel && chargingType) {
-            // Calculate charging time and cost
-            // Apply similar logic as backend to avoid mathematical issues for 100%
-            let adjustedTargetLevel = targetLevel;
-            let adjustedInitialLevel = initialLevel;
-
-            if (adjustedTargetLevel === 100) {
-                adjustedTargetLevel = 99.9; // Adjust target to prevent issues in logistic calculation
+        function evChargingTimeLogistic(currentPercent, targetPercent, chargerPowerKw, batteryCapacityKwh, chargingEfficiency, k) {
+            // Mirror backend Python logic
+            if (!(0 <= currentPercent && currentPercent <= 100 && 0 <= targetPercent && targetPercent <= 100)) {
+                return 0.0;
             }
-            if (adjustedInitialLevel === 0) {
-                adjustedInitialLevel = 0.1; // Adjust initial to prevent issues
+            if (currentPercent >= targetPercent) {
+                return 0.0;
             }
+            if (currentPercent === 0) {
+                currentPercent = 0.1;
+            }
+            if (targetPercent === 100) {
+                targetPercent = 99.9;
+            }
+            let unitTime;
+            try {
+                unitTime = (1 / k) * Math.log(
+                    (targetPercent * (100 - currentPercent)) /
+                    (currentPercent * (100 - targetPercent))
+                );
+            } catch (e) {
+                // Fallback to linear approximation
+                const linearFullChargeTime = batteryCapacityKwh / (chargerPowerKw * chargingEfficiency);
+                return linearFullChargeTime * (targetPercent - currentPercent) / 100 * 60; // minutes
+            }
+            const linearFullChargeTime = batteryCapacityKwh / (chargerPowerKw * chargingEfficiency);
+            const logisticScale = linearFullChargeTime / 7.43;
+            return unitTime * logisticScale * 60; // Convert hours to minutes
+        }
 
-            const batteryPercentageToCharge = adjustedTargetLevel - adjustedInitialLevel;
-            const energyNeededKwh = (batteryPercentageToCharge / 100) * batteryCapacity;
+        if (
+            batteryCapacity && !isNaN(batteryCapacity) &&
+            initialLevel !== undefined && !isNaN(initialLevel) &&
+            targetLevel !== undefined && !isNaN(targetLevel) &&
+            chargingType && chargingSpeeds[chargingType]
+        ) {
+            let adjustedInitial = initialLevel;
+            let adjustedTarget = targetLevel;
+            if (adjustedInitial === 0) adjustedInitial = 0.1;
+            if (adjustedTarget === 100) adjustedTarget = 99.9;
 
-            const chargingSpeed = chargingSpeeds[chargingType] || 7.4;
+            const chargerPowerKw = chargingSpeeds[chargingType];
+            const efficiency = chargingEfficiency[chargingType] || 0.85;
             const chargingRate = chargingRates[chargingType] || 15;
-            const efficiency = chargingEfficiency[chargingType] || 0.85; // Get efficiency based on type
 
-            const chargingTimeHours = energyNeededKwh / chargingSpeed;
-            const chargingTimeMinutes = chargingTimeHours * 60;
-            const actualEnergyConsumed = energyNeededKwh / efficiency; // Use type-specific efficiency
+            // Charging time in minutes using logistic model
+            let chargingTimeMinutes = evChargingTimeLogistic(
+                adjustedInitial,
+                adjustedTarget,
+                chargerPowerKw,
+                batteryCapacity,
+                efficiency,
+                k
+            );
+            if (!isFinite(chargingTimeMinutes) || chargingTimeMinutes < 0) {
+                // Fallback to linear if math error
+                const batteryPercentageToCharge = adjustedTarget - adjustedInitial;
+                const energyNeededKwh = (batteryPercentageToCharge / 100) * batteryCapacity;
+                chargingTimeMinutes = (energyNeededKwh / chargerPowerKw) * 60;
+            }
+
+            // Cost calculation (matches backend)
+            const batteryPercentageToCharge = adjustedTarget - adjustedInitial;
+            const energyNeededKwh = (batteryPercentageToCharge / 100) * batteryCapacity;
+            const actualEnergyConsumed = energyNeededKwh / efficiency;
             const chargingCost = actualEnergyConsumed * chargingRate;
 
-            // Update the estimate display
+            // UI update
             let estimatedTimeMinutes = Math.round(chargingTimeMinutes);
             let estimatedTimeDisplay;
             if (estimatedTimeMinutes >= 60) {
@@ -1310,5 +1370,66 @@ body {
 
 </script>
 
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script src="/templates/chngs.js"></script>
+<script>
+// --- Station Queue Display ---
+function fetchAndRenderStationQueue(stationId) {
+    axios.get(`/station_queue/${stationId}`)
+        .then(res => {
+            const slots = res.data.slots;
+            let html = '';
+            if (!slots || Object.keys(slots).length === 0) {
+                html = '<p>No bookings yet.</p>';
+            } else {
+                Object.keys(slots).sort((a, b) => a - b).forEach(slotNum => {
+                    html += `<h4>Slot ${slotNum}</h4><ol>`;
+                    slots[slotNum].forEach(bk => {
+                        html += `<li>User: ${bk.user_id} | Vehicle: ${bk.vehicle_id} | ${bk.start_time} - ${bk.end_time} | Status: ${bk.status} | Priority: ${bk.priority_score}</li>`;
+                    });
+                    html += '</ol>';
+                });
+            }
+            document.getElementById('station-queue-container').innerHTML = html;
+        })
+        .catch(() => {
+            document.getElementById('station-queue-container').innerHTML = '<p style="color:red">Could not load queue.</p>';
+        });
+}
+
+// --- Booking Result Modal ---
+function showBookingResult(result) {
+    let html = '';
+    if (result.status === 'confirmed') {
+        html += `<p><strong>Booking Confirmed!</strong></p>`;
+        html += `<p>Assigned Slot: <strong>${result.assigned_slot}</strong></p>`;
+        html += `<p>Scheduled Start: <strong>${result.scheduled_start_time}</strong></p>`;
+        html += `<p>Scheduled End: <strong>${result.scheduled_end_time}</strong></p>`;
+        html += `<p>Wait Time: <strong>${result.wait_time_minutes}</strong> min</p>`;
+        html += `<p>Priority Score: <strong>${result.priority_score}</strong></p>`;
+    } else {
+        html += `<p style="color:red"><strong>Booking Failed:</strong> ${result.message || 'Unknown error.'}</p>`;
+    }
+    document.getElementById('booking-result-details').innerHTML = html;
+    document.getElementById('bookingResultModal').style.display = 'flex';
+}
+function closeBookingResultModal() {
+    document.getElementById('bookingResultModal').style.display = 'none';
+}
+
+// --- Example: Hook to booking form (replace with your actual booking form logic) ---
+// document.getElementById('yourBookingForm').onsubmit = function(e) {
+//     e.preventDefault();
+//     // Collect form data...
+//     axios.post('/create_booking', bookingData)
+//         .then(res => showBookingResult(res.data))
+//         .catch(err => showBookingResult({status: 'error', message: err.response?.data?.message || 'Booking failed.'}));
+// };
+
+// On page load, fetch queue (replace '{{ station.id }}' with actual station id variable)
+document.addEventListener('DOMContentLoaded', function() {
+    fetchAndRenderStationQueue('{{ station.id }}');
+});
+</script>
 </body>
 </html>

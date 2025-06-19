@@ -329,7 +329,8 @@ def add_vehicle():
     station_id = session["station_id"]
 
     # Validate required fields
-    required_fields = ["vehicleNumber", "arrivalTime", "chargingType", "initialBatteryLevel", "targetBatteryLevel", "batteryCapacity"]
+    # Accept either targetBatteryLevel or targetChargeMinutes (or both, prioritize minutes)
+    required_fields = ["vehicleNumber", "arrivalTime", "chargingType", "initialBatteryLevel", "batteryCapacity"]
     for field in required_fields:
         if data.get(field) is None:
             raise MissingDataError(f"Missing data for required field: {field}!")
@@ -339,32 +340,49 @@ def add_vehicle():
         arrival_time_str = data.get("arrivalTime")
         chargingType = data.get("chargingType")
         initial_battery_level = float(data.get("initialBatteryLevel"))
-        target_battery_level = float(data.get("targetBatteryLevel"))
         battery_capacity = float(data.get("batteryCapacity"))
+        # Optional fields
+        target_battery_level = data.get("targetBatteryLevel")
+        target_charge_minutes = data.get("targetChargeMinutes")
+        target_battery_level = float(target_battery_level) if target_battery_level not in (None, "") else None
+        target_charge_minutes = int(target_charge_minutes) if target_charge_minutes not in (None, "") else None
     except ValueError:
-        raise InvalidUsage("Invalid data type for battery levels or capacity. Must be numbers.")
+        raise InvalidUsage("Invalid data type for battery levels, capacity, or minutes. Must be numbers.")
 
     if not vehicle_number:
         raise MissingDataError("Vehicle number cannot be empty!")
     if initial_battery_level < 0 or initial_battery_level > 100:
         raise InvalidUsage("Initial battery level must be between 0 and 100.")
-    if target_battery_level < 0 or target_battery_level > 100:
-        raise InvalidUsage("Target battery level must be between 0 and 100.")
-    if target_battery_level <= initial_battery_level:
-        raise InvalidUsage("Target battery level must be greater than initial battery level.")
     if battery_capacity <= 0:
         raise InvalidUsage("Battery capacity must be a positive number.")
     if not chargingType:
         raise MissingDataError("Charging Type is required!")
 
+    # At least one target must be provided
+    if target_battery_level is None and target_charge_minutes is None:
+        raise MissingDataError("Please provide either a target battery level or target minutes to charge.")
+    if target_battery_level is not None:
+        if target_battery_level < 0 or target_battery_level > 100:
+            raise InvalidUsage("Target battery level must be between 0 and 100.")
+        if target_battery_level <= initial_battery_level:
+            raise InvalidUsage("Target battery level must be greater than initial battery level.")
+    if target_charge_minutes is not None:
+        if target_charge_minutes <= 0:
+            raise InvalidUsage("Target minutes to charge must be greater than 0.")
+
     try:
-        # Calculate charging time and cost
-        charging_time_min, charging_cost = calculate_charging_time(
-            initial_battery_level,
-            target_battery_level,
-            battery_capacity,
-            chargingType
-        )
+        # Prioritize minutes if provided
+        if target_charge_minutes is not None:
+            charging_time_min = target_charge_minutes
+            charging_cost = None  # Could estimate cost if needed, but not enough info
+        else:
+            # Calculate charging time and cost as before
+            charging_time_min, charging_cost = calculate_charging_time(
+                initial_battery_level,
+                target_battery_level,
+                battery_capacity,
+                chargingType
+            )
 
         # Parse arrival_time string to datetime object (assuming format HH:MM)
         today = date.today()
@@ -433,9 +451,10 @@ def add_vehicle():
             "chargingType": chargingType,
             "initial_battery_level": initial_battery_level,
             "target_battery_level": target_battery_level,
+            "target_charge_minutes": target_charge_minutes,
             "battery_capacity": battery_capacity,
             "charging_time_minutes": round(charging_time_min),
-            "charging_cost": round(charging_cost),
+            "charging_cost": round(charging_cost) if charging_cost is not None else None,
             "wait_time_minutes": wait_time_minutes,
             "status": vehicle_status,
             "slot_number": slot_number,
@@ -452,10 +471,11 @@ def add_vehicle():
             "message": "Vehicle added successfully!", 
             "vehicle_id": new_vehicle_id,
             "charging_time_minutes": round(charging_time_min),
-            "charging_cost": round(charging_cost),
+            "charging_cost": round(charging_cost) if charging_cost is not None else None,
             "wait_time_minutes": wait_time_minutes,
             "departure_time": departure_time_full,
-            "available_slots": available_slots
+            "available_slots": available_slots,
+            "target_type": "minutes" if target_charge_minutes is not None else "percentage"
         }), 201
     except CalculationError as e:
         raise e # Re-raise CalculationError as is

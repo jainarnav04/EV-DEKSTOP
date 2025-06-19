@@ -941,6 +941,10 @@ body {
 
     // Update removeVehicle function to handle slot updates and refresh table
     async function removeVehicle(vehicleId) {
+        // Show confirmation dialog before proceeding
+        if (!window.confirm('Are you sure you want to remove this vehicle?')) {
+            return;
+        }
         try {
             const response = await fetch("/remove_vehicle", {
                 method: "POST",

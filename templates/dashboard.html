@@ -395,8 +395,6 @@ body {
 
         <!-- Station Queue Section -->
         <div class="dashboard-right">
-            <h2>Station Queue</h2>
-            <div id="station-queue-container"></div>
             <hr>
             <h2>Currently Charging Vehicles</h2>
             <button onclick="openVehicleModal()" class="addbtn">Add Vehicle</button>
@@ -1361,29 +1359,7 @@ body {
 <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 <script src="/templates/chngs.js"></script>
 <script>
-// --- Station Queue Display ---
-function fetchAndRenderStationQueue(stationId) {
-    axios.get(`/station_queue/${stationId}`)
-        .then(res => {
-            const slots = res.data.slots;
-            let html = '';
-            if (!slots || Object.keys(slots).length === 0) {
-                html = '<p>No bookings yet.</p>';
-            } else {
-                Object.keys(slots).sort((a, b) => a - b).forEach(slotNum => {
-                    html += `<h4>Slot ${slotNum}</h4><ol>`;
-                    slots[slotNum].forEach(bk => {
-                        html += `<li>User: ${bk.user_id} | Vehicle: ${bk.vehicle_id} | ${bk.start_time} - ${bk.end_time} | Status: ${bk.status} | Priority: ${bk.priority_score}</li>`;
-                    });
-                    html += '</ol>';
-                });
-            }
-            document.getElementById('station-queue-container').innerHTML = html;
-        })
-        .catch(() => {
-            document.getElementById('station-queue-container').innerHTML = '<p style="color:red">Could not load queue.</p>';
-        });
-}
+
 
 // --- Booking Result Modal ---
 function showBookingResult(result) {

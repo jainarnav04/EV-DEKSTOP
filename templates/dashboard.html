@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Charging Station Dashboard</title>
-    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDTkgXCM1kVRjOEJkJRXA57V4jLe--5b_k&libraries=places&callback=initMap"></script>
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_api_key }}&libraries=places&callback=initMap"></script>
     <style>
         /* Background similar to login page */
 html, body {
@@ -1183,20 +1183,10 @@ body {
             if (targetPercent === 100) {
                 targetPercent = 99.9;
             }
-            let unitTime;
-            try {
-                unitTime = (1 / k) * Math.log(
-                    (targetPercent * (100 - currentPercent)) /
-                    (currentPercent * (100 - targetPercent))
-                );
-            } catch (e) {
-                // Fallback to linear approximation
-                const linearFullChargeTime = batteryCapacityKwh / (chargerPowerKw * chargingEfficiency);
-                return linearFullChargeTime * (targetPercent - currentPercent) / 100 * 60; // minutes
-            }
-            const linearFullChargeTime = batteryCapacityKwh / (chargerPowerKw * chargingEfficiency);
-            const logisticScale = linearFullChargeTime / 7.43;
-            return unitTime * logisticScale * 60; // Convert hours to minutes
+            percent_to_charge = targetPercent - currentPercent
+            energy_needed_kwh = (percent_to_charge / 100) * batteryCapacityKwh
+            charge_time_hours = energy_needed_kwh / (chargerPowerKw * 0.9)
+            return charge_time_hours *60;
         }
 
         if (

@@ -56,14 +56,14 @@ def ev_charging_time(current_percent, target_percent, charger_power_kw, battery_
     return charge_time_hours
 
 app = Flask(__name__, static_folder='static')
-app.secret_key = os.environ.get("FLASK_SECRET_KEY", "fallback_secret_for_dev_only")
+app.secret_key = os.environ.get("FLASK_SECRET_KEY", "fallback_secret_for_dev_only") # Required for Flask sessions
 
 print("Initializing Firebase...")  # Debug print
 # Initialize Firebase
 import os
 
 # Use environment variable for credential path in deployment, fallback to local file for development
-firebase_cred_path = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
+firebase_cred_path = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS", "ev-navigation-2e1b6-firebase-adminsdk-2erdd-a461f83476.json")
 cred = credentials.Certificate(firebase_cred_path)
 firebase_admin.initialize_app(cred)
 db = firestore.client()
@@ -250,7 +250,7 @@ def dashboard():
         charging_count = sum(1 for v in vehicles if v.get('status', '').upper() == 'CHARGING')
         available_slots = max(int(total_slots) - charging_count, 0) if total_slots else 0
         google_maps_api_key = os.environ.get("GOOGLE_MAPS_API_KEY")
-        return render_template("dashboard.html", station=station_data, vehicles=vehicles, slot_free_time=slot_free_time, available_slots=available_slots, google_maps_api_key=google_maps_api_key)  # Pass vehicles data and dynamic available_slots
+        return render_template("dashboard.html", station=station_data, vehicles=vehicles, slot_free_time=slot_free_time, available_slots=available_slots, google_maps_api_key=google_maps_api_key)  # Pass vehicles data and dynamic available_slotsa and dynamic available_slots
     else:
         return "Error: Station not found", 404
 

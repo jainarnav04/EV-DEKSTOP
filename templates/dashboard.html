@@ -652,17 +652,83 @@ body {
         event.preventDefault();
         formChanged = false;
 
-        const submitBtn = this; // Reference to the button
-        toggleLoadingState(submitBtn, true); // Show loading state
+        const submitBtn = this;
+        toggleLoadingState(submitBtn, true);
 
-        let stationName = document.getElementById("stationName").value;
-        let operatorName = document.getElementById("operatorName").value;
-        let chargingType = document.getElementById("stationChargingType").value;
-        let location = document.getElementById("location").value;
-        let totalSlots = document.getElementById("totalSlots").value;
-        let chargingRate = document.getElementById("chargingRate").value;
-        let latitude = document.getElementById("latitude").value;
-        let longitude = document.getElementById("longitude").value;
+        // Get all input elements
+        const stationNameInput = document.getElementById("stationName");
+        const operatorNameInput = document.getElementById("operatorName");
+        const chargingTypeInput = document.getElementById("stationChargingType");
+        const locationInput = document.getElementById("location");
+        const totalSlotsInput = document.getElementById("totalSlots");
+        const chargingRateInput = document.getElementById("chargingRate");
+        const latitudeInput = document.getElementById("latitude");
+        const longitudeInput = document.getElementById("longitude");
+
+        // Remove previous errors
+        document.querySelectorAll('#updateForm .error-message').forEach(el => el.remove());
+        [stationNameInput, operatorNameInput, chargingTypeInput, locationInput, totalSlotsInput, chargingRateInput].forEach(input => input.classList.remove('invalid-input'));
+
+        // Helper for error display
+        function displayError(input, message) {
+    input.classList.add('invalid-input');
+    // Remove any previous error for this field
+    let next = input.nextElementSibling;
+    if (next && next.classList.contains('error-message')) {
+        next.remove();
+    }
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'error-message';
+    errorDiv.textContent = message;
+    // Insert error after input/select
+    if (input.nextElementSibling) {
+        input.parentNode.insertBefore(errorDiv, input.nextElementSibling);
+    } else {
+        input.parentNode.appendChild(errorDiv);
+    }
+}
+
+        // Validate fields
+        let isValid = true;
+        if (!stationNameInput.value.trim()) {
+            displayError(stationNameInput, "Station name is required.");
+            isValid = false;
+        }
+        if (!operatorNameInput.value.trim()) {
+            displayError(operatorNameInput, "Operator name is required.");
+            isValid = false;
+        }
+        if (!chargingTypeInput.value.trim()) {
+            displayError(chargingTypeInput, "Charging type is required.");
+            isValid = false;
+        }
+        if (!locationInput.value.trim()) {
+            displayError(locationInput, "Location is required.");
+            isValid = false;
+        }
+        if (!totalSlotsInput.value.trim() || isNaN(totalSlotsInput.value) || Number(totalSlotsInput.value) < 1) {
+            displayError(totalSlotsInput, "Total slots must be at least 1.");
+            isValid = false;
+        }
+        if (!chargingRateInput.value.trim() || isNaN(chargingRateInput.value) || Number(chargingRateInput.value) < 1) {
+            displayError(chargingRateInput, "Charging rate must be at least 1.");
+            isValid = false;
+        }
+        // Latitude/longitude are hidden, can add validation if needed
+
+        if (!isValid) {
+            toggleLoadingState(submitBtn, false);
+            return;
+        }
+
+        let stationName = stationNameInput.value;
+        let operatorName = operatorNameInput.value;
+        let chargingType = chargingTypeInput.value;
+        let location = locationInput.value;
+        let totalSlots = totalSlotsInput.value;
+        let chargingRate = chargingRateInput.value;
+        let latitude = latitudeInput.value;
+        let longitude = longitudeInput.value;
 
         const requestData = {
             stationName: stationName,
@@ -809,9 +875,10 @@ body {
     document.getElementById("addVehicleForm").addEventListener("submit", async function(event) {
         event.preventDefault();
 
-        const addVehicleBtn = this.querySelector('.add-vehicle-btn'); // Reference to the add vehicle button
-        toggleLoadingState(addVehicleBtn, true); // Show loading state
+        const addVehicleBtn = this.querySelector('.add-vehicle-btn');
+        toggleLoadingState(addVehicleBtn, true);
 
+        // Get all input elements
         const vehicleNumberInput = document.getElementById("vehicleNumber");
         const initialBatteryLevelInput = document.getElementById("initialBatteryLevel");
         const targetBatteryLevelInput = document.getElementById("targetBatteryLevel");
@@ -819,26 +886,31 @@ body {
         const vehicleChargingTypeInput = document.getElementById("vehicleChargingType");
         const batteryCapacityInput = document.getElementById("batteryCapacity");
 
-        const vehicleNumber = vehicleNumberInput.value.trim();
-        const arrivalTime = arrivalTimeInput.value;
-        const chargingType = vehicleChargingTypeInput.value;
-        const initialBatteryLevel = parseFloat(initialBatteryLevelInput.value);
-        const targetBatteryLevel = parseFloat(targetBatteryLevelInput.value);
-        const batteryCapacity = parseFloat(batteryCapacityInput.value);
-
-        const vehicleNumberRegex = /^[A-Z]{2}\d{2}[A-Z]{1,2}\d{4}$/;
+        // Helper to show error
+        function displayError(input, message) {
+            input.classList.add('invalid-input');
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error-message';
+            errorDiv.textContent = message;
+            input.parentNode.appendChild(errorDiv);
+        }
 
         // Clear previous error messages and styles
         document.querySelectorAll('.error-message').forEach(el => el.remove());
-        vehicleNumberInput.classList.remove('invalid-input');
-        initialBatteryLevelInput.classList.remove('invalid-input');
-        targetBatteryLevelInput.classList.remove('invalid-input');
-        arrivalTimeInput.classList.remove('invalid-input');
-        vehicleChargingTypeInput.classList.remove('invalid-input');
-        batteryCapacityInput.classList.remove('invalid-input');
+        [vehicleNumberInput, initialBatteryLevelInput, targetBatteryLevelInput, arrivalTimeInput, vehicleChargingTypeInput, batteryCapacityInput].forEach(input => input.classList.remove('invalid-input'));
+
+        // Get values
+        const vehicleNumber = vehicleNumberInput.value.trim();
+        const vehicleNumberRegex = /^[A-Z]{2}\d{2}[A-Z]{1,2}\d{4}$/;
+        const arrivalTime = arrivalTimeInput.value;
+        const initialBatteryLevel = initialBatteryLevelInput.value;
+        const targetBatteryLevel = targetBatteryLevelInput.value;
+        const chargingType = vehicleChargingTypeInput.value;
+        const batteryCapacity = batteryCapacityInput.value;
 
         let isValid = true;
 
+        // Vehicle number validation
         if (!vehicleNumber) {
             displayError(vehicleNumberInput, "Vehicle number is required.");
             isValid = false;
@@ -847,6 +919,7 @@ body {
             isValid = false;
         }
 
+        // Arrival time validation
         if (!arrivalTime) {
             displayError(arrivalTimeInput, "Arrival time is required.");
             isValid = false;

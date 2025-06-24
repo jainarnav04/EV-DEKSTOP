@@ -63,7 +63,7 @@ print("Initializing Firebase...")  # Debug print
 import os
 
 # Use environment variable for credential path in deployment, fallback to local file for development
-firebase_cred_path = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS", "ev-navigation-2e1b6-firebase-adminsdk-2erdd-a461f83476.json")
+firebase_cred_path = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
 cred = credentials.Certificate(firebase_cred_path)
 firebase_admin.initialize_app(cred)
 db = firestore.client()

@@ -8,9 +8,13 @@
     <style>
         /* Background similar to login page */
 html, body {
-    min-height: 100vh; /* Ensure the entire page can scroll */
-    overflow-y: auto; /* Enable vertical scrolling for the whole page */
+    height: 100%;
+    width: 100%;
+    min-height: 100vh;
+    min-width: 100vw;
     margin: 0;
+    padding: 0;
+    overflow: auto;
     background: linear-gradient(90deg, #e2e2e2, #c9ffd6);
     font-family: 'Poppins', sans-serif;
     color: white;
@@ -23,12 +27,14 @@ body {
 /* Main Dashboard Container */
 .dashboard-container {
     display: flex;
-    width: 100%;
+    width: 100vw;
+    min-width: 100vw;
+    height: 100vh;
     min-height: 100vh;
     background: white;
     border-radius: 0px;
     box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.2);
-    /* overflow-y: auto; -- This is now handled by html, body */
+    box-sizing: border-box;
 }
 
 /* Left Side: Charging Station Details */
@@ -411,6 +417,7 @@ body {
                         <th>Battery Capacity</th>
                         <th>Initial Battery</th>
                         <th>Target Battery</th>
+                        <th>Estimated Charge %</th>
                         <th>Charging Time</th>
                         <th>Wait Time</th>
                         <th>Current Status</th>
@@ -429,7 +436,8 @@ body {
                         <td>{{ vehicle.chargingType }}</td>
                         <td>{{ vehicle.battery_capacity }} kWh</td>
                         <td>{{ vehicle.initial_battery_level }}%</td>
-                        <td>{{ vehicle.target_battery_level }}%</td>
+                        <td>{% if vehicle.target_battery_level is not none and vehicle.target_battery_level != '' %}{{ vehicle.target_battery_level }}%{% else %}N/A{% endif %}</td>
+                        <td>{% if vehicle.estimated_final_battery is not none %}{{ vehicle.estimated_final_battery }}%{% else %}N/A{% endif %}</td>
                         <td>
                             {% if vehicle.charging_time_minutes >= 60 %}
                                 {{ (vehicle.charging_time_minutes / 60) | int }} hrs {{ (vehicle.charging_time_minutes % 60) | int }} min
@@ -474,10 +482,16 @@ body {
             <h3>Vehicle Details</h3>
             <div class="form-group">
                 <label for="vehicleNumber">Vehicle Number:</label>
-                <input type="text" id="vehicleNumber" placeholder="Vehicle Number" required>
+                <div class="input-box">
+                    <div class="input-content">
+                        <input type="text" id="vehicleNumber" name="vehicle_number" placeholder="Vehicle Number" required>
+                        <i class='bx bxs-car'></i>
+                    </div>
+                    <div class="error-message">Please enter a valid vehicle number</div>
+                </div>
+                
             </div>
 
-            <h3>Time Information</h3>
             <div class="form-group">
                 <label for="arrivalTime">Arrival Time:</label>
                 <input type="time" id="arrivalTime" placeholder="Time of arrival" required>
@@ -507,13 +521,83 @@ body {
             </div>
             <div class="form-group">
                 <label for="targetBatteryLevel">Target Battery Level (%):</label>
-                <input type="number" id="targetBatteryLevel" min="0" max="100" required>
+                <input type="number" id="targetBatteryLevel" min="0" max="100" >
             </div>
+            <div class="form-group">
+                <label for="chargingTimeMinutes">Charging Time (min): </label>
+                <input type="number" id="chargingTimeMinutes" name="charging_time_minutes" min="0" max="1440">
+            </div>
+            <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                const targetBatteryInput = document.getElementById('targetBatteryLevel');
+                const chargingTimeInput = document.getElementById('chargingTimeMinutes');
+
+                // Make target and time mutually exclusive
+                targetBatteryInput.addEventListener('input', function() {
+                    if (targetBatteryInput.value !== "" && !isNaN(parseFloat(targetBatteryInput.value))) {
+                        chargingTimeInput.value = "";
+                    }
+                    updateChargingEstimate();
+                });
+                chargingTimeInput.addEventListener('input', function() {
+                    if (chargingTimeInput.value !== "" && !isNaN(parseFloat(chargingTimeInput.value))) {
+                        targetBatteryInput.value = "";
+                    }
+                    updateChargingEstimate();
+                });
+
+                // Ensure both fields are enabled and empty on modal open
+                function resetMutualDisableFields() {
+                    targetBatteryInput.disabled = false;
+                    chargingTimeInput.disabled = false;
+                    targetBatteryInput.value = '';
+                    chargingTimeInput.value = '';
+                }
+                // Reset fields when modal is opened (when display changes to flex)
+                const vehicleModal = document.getElementById('vehicleModal');
+                function watchVehicleModalOpen() {
+                    const observer = new MutationObserver(() => {
+                        if (vehicleModal.style.display === 'flex') {
+                            resetMutualDisableFields();
+                        }
+                    });
+                    observer.observe(vehicleModal, { attributes: true, attributeFilter: ['style'] });
+                }
+                watchVehicleModalOpen();
+
+                function handleMutualDisable() {
+                    const targetBatteryFilled = targetBatteryInput.value !== '' && !isNaN(Number(targetBatteryInput.value));
+                    const chargingTimeFilled = chargingTimeInput.value !== '' && !isNaN(Number(chargingTimeInput.value));
+
+                    if (targetBatteryFilled) {
+                        chargingTimeInput.value = '';
+                        chargingTimeInput.disabled = true;
+                    } else if (!chargingTimeFilled) {
+                        chargingTimeInput.disabled = false;
+                    }
+
+                    if (chargingTimeFilled) {
+                        targetBatteryInput.value = '';
+                        targetBatteryInput.disabled = true;
+                    } else if (!targetBatteryFilled) {
+                        targetBatteryInput.disabled = false;
+                    }
+                }
+                targetBatteryInput.addEventListener('input', handleMutualDisable);
+                chargingTimeInput.addEventListener('input', handleMutualDisable);
+
+                // Also reset fields on DOMContentLoaded (first page load)
+                resetMutualDisableFields();
+            });
+            </script>
+
+            
 
             <div class="chargingCost" id="chargingEstimate" style="display: none; margin-top: 15px; ; padding: 10px; background:rgba(0, 0, 0, .2); border-radius: 5px;">
                 <h4>Charging Estimates</h4>
                 <p>Estimated Time: <span id="estimatedTime">-</span></p>
                 <p>Estimated Cost: ₹<span id="estimatedCost">-</span></p>
+                <p>Estimated Final Battery: <span id="estimatedFinalBattery">-</span>%</p>
             </div>
 
             <button type="submit" class="save-btn add-vehicle-btn" aria-label="Add Vehicle">Add Vehicle</button>
@@ -882,9 +966,18 @@ body {
         const vehicleNumberInput = document.getElementById("vehicleNumber");
         const initialBatteryLevelInput = document.getElementById("initialBatteryLevel");
         const targetBatteryLevelInput = document.getElementById("targetBatteryLevel");
+        const chargingTimeMinutesInput = document.getElementById("chargingTimeMinutes");
         const arrivalTimeInput = document.getElementById("arrivalTime");
         const vehicleChargingTypeInput = document.getElementById("vehicleChargingType");
         const batteryCapacityInput = document.getElementById("batteryCapacity");
+
+        // Check for missing inputs
+        const allInputs = [vehicleNumberInput, initialBatteryLevelInput, targetBatteryLevelInput, chargingTimeMinutesInput, arrivalTimeInput, vehicleChargingTypeInput, batteryCapacityInput];
+        if (allInputs.some(input => input === null)) {
+            alert("A required form input is missing from the page. Please reload or contact support.");
+            toggleLoadingState(addVehicleBtn, false);
+            return;
+        }
 
         // Helper to show error
         function displayError(input, message) {
@@ -897,7 +990,9 @@ body {
 
         // Clear previous error messages and styles
         document.querySelectorAll('.error-message').forEach(el => el.remove());
-        [vehicleNumberInput, initialBatteryLevelInput, targetBatteryLevelInput, arrivalTimeInput, vehicleChargingTypeInput, batteryCapacityInput].forEach(input => input.classList.remove('invalid-input'));
+        [vehicleNumberInput, initialBatteryLevelInput, targetBatteryLevelInput, chargingTimeMinutesInput, arrivalTimeInput, vehicleChargingTypeInput, batteryCapacityInput].forEach(input => {
+            if (input) input.classList.remove('invalid-input');
+        });
 
         // Get values
         const vehicleNumber = vehicleNumberInput.value.trim();
@@ -905,6 +1000,7 @@ body {
         const arrivalTime = arrivalTimeInput.value;
         const initialBatteryLevel = initialBatteryLevelInput.value;
         const targetBatteryLevel = targetBatteryLevelInput.value;
+        const chargingTimeMinutes = chargingTimeMinutesInput.value;
         const chargingType = vehicleChargingTypeInput.value;
         const batteryCapacity = batteryCapacityInput.value;
 
@@ -925,6 +1021,29 @@ body {
             isValid = false;
         }
 
+        // At least one of targetBatteryLevel or chargingTimeMinutes must be provided
+        // Require at least one of the two fields
+        if ((targetBatteryLevel === '' || isNaN(Number(targetBatteryLevel))) && (chargingTimeMinutes === '' || isNaN(Number(chargingTimeMinutes)))) {
+            displayError(targetBatteryLevelInput, "Enter either target battery level or charging time.");
+            displayError(chargingTimeMinutesInput, "Enter either charging time or target battery level.");
+            isValid = false;
+        }
+
+        // Only validate targetBatteryLevel if provided
+        if (targetBatteryLevel !== '' && !isNaN(Number(targetBatteryLevel))) {
+            if (Number(targetBatteryLevel) < 0 || Number(targetBatteryLevel) > 100) {
+                displayError(targetBatteryLevelInput, "Please enter a valid target battery level (0-100%).");
+                isValid = false;
+            }
+        }
+        // Only validate chargingTimeMinutes if provided
+        if (chargingTimeMinutes !== '' && !isNaN(Number(chargingTimeMinutes))) {
+            if (Number(chargingTimeMinutes) <= 0) {
+                displayError(chargingTimeMinutesInput, "Charging time must be greater than 0 minutes.");
+                isValid = false;
+            }
+        }
+
         if (!chargingType) {
             displayError(vehicleChargingTypeInput, "Charging type is required.");
             isValid = false;
@@ -935,14 +1054,20 @@ body {
             isValid = false;
         }
 
-        if (isNaN(targetBatteryLevel) || targetBatteryLevel < 0 || targetBatteryLevel > 100) {
-            displayError(targetBatteryLevelInput, "Please enter a valid target battery level (0-100%).");
-            isValid = false;
+        // Only validate targetBatteryLevel if it is provided (not empty)
+        if (targetBatteryLevel !== '' && !isNaN(Number(targetBatteryLevel))) {
+            if (Number(targetBatteryLevel) < 0 || Number(targetBatteryLevel) > 100) {
+                displayError(targetBatteryLevelInput, "Please enter a valid target battery level (0-100%).");
+                isValid = false;
+            }
         }
 
-        if (initialBatteryLevel !== undefined && targetBatteryLevel !== undefined && targetBatteryLevel <= initialBatteryLevel) {
-            displayError(targetBatteryLevelInput, "Target battery level must be greater than initial battery level.");
-            isValid = false;
+        // Only validate if targetBatteryLevel is filled and valid
+        if (targetBatteryLevel !== '' && !isNaN(Number(targetBatteryLevel))) {
+            if (Number(targetBatteryLevel) <= Number(initialBatteryLevel)) {
+                displayError(targetBatteryLevelInput, "Target battery level must be greater than initial battery level.");
+                isValid = false;
+            }
         }
 
         if (isNaN(batteryCapacity) || batteryCapacity <= 0) {
@@ -961,6 +1086,7 @@ body {
             chargingType: chargingType,
             initialBatteryLevel: initialBatteryLevel,
             targetBatteryLevel: targetBatteryLevel,
+            charging_time_minutes: chargingTimeMinutes,
             batteryCapacity: batteryCapacity
         };
 
@@ -1000,7 +1126,13 @@ body {
 
                 // Clear the form
                 document.getElementById("addVehicleForm").reset();
-                document.getElementById('chargingEstimate').style.display = 'none';
+                // If charging_time_minutes was provided and estimated_final_battery is in the response, show it
+                if (requestData.charging_time_minutes && data.estimated_final_battery !== undefined && data.estimated_final_battery !== null) {
+                    document.getElementById('estimatedFinalBattery').textContent = data.estimated_final_battery;
+                    document.getElementById('chargingEstimate').style.display = 'block';
+                } else {
+                    document.getElementById('chargingEstimate').style.display = 'none';
+                }
             } else {
                 alert(data.error);
             }
@@ -1226,93 +1358,72 @@ body {
 
     // Add this to your existing JavaScript
     function updateChargingEstimate() {
+        // Declare all variables only once
         const batteryCapacity = parseFloat(document.getElementById('batteryCapacity').value);
         const initialLevel = parseFloat(document.getElementById('initialBatteryLevel').value);
         const targetLevel = parseFloat(document.getElementById('targetBatteryLevel').value);
         const chargingType = document.getElementById('vehicleChargingType').value;
+        const chargingTimeInput = document.getElementById('chargingTimeMinutes');
+        const chargingTime = parseFloat(chargingTimeInput.value);
 
-        const chargingSpeeds = {
-            "AC Type 1": 7.4, "AC Type 2": 22.0, "CCS": 150.0, "CHAdeMO": 62.5, "GB/T": 120.0
-        };
+        // Charging rates (₹ per kWh) by type
         const chargingRates = {
-            "AC Type 1": 15, "AC Type 2": 18, "CCS": 25, "CHAdeMO": 25, "GB/T": 20
+            'AC Type 1': 15,
+            'AC Type 2': 18,
+            'CCS': 25,
+            'CHAdeMO': 25,
+            'GB/T': 20,
         };
+        // Charger powers (kW) by type
+        const chargingSpeeds = {
+            'AC Type 1': 7.4,
+            'AC Type 2': 22.0,
+            'CCS': 150.0,
+            'CHAdeMO': 62.5,
+            'GB/T': 120.0,
+        };
+        // Charging efficiency by type
         const chargingEfficiency = {
-            "AC Type 1": 0.85, "AC Type 2": 0.88, "CCS": 0.92, "CHAdeMO": 0.92, "GB/T": 0.90
+            'AC Type 1': 0.85,
+            'AC Type 2': 0.88,
+            'CCS': 0.92,
+            'CHAdeMO': 0.92,
+            'GB/T': 0.90,
         };
-        const k = 1.6; // Logistic model constant, matches backend
 
-        function evChargingTimeLogistic(currentPercent, targetPercent, chargerPowerKw, batteryCapacityKwh, chargingEfficiency, k) {
-            // Mirror backend Python logic
-            if (!(0 <= currentPercent && currentPercent <= 100 && 0 <= targetPercent && targetPercent <= 100)) {
-                return 0.0;
-            }
-            if (currentPercent >= targetPercent) {
-                return 0.0;
-            }
-            if (currentPercent === 0) {
-                currentPercent = 0.1;
-            }
-            if (targetPercent === 100) {
-                targetPercent = 99.9;
-            }
-            percent_to_charge = targetPercent - currentPercent
-            energy_needed_kwh = (percent_to_charge / 100) * batteryCapacityKwh
-            charge_time_hours = energy_needed_kwh / (chargerPowerKw * 0.9)
-            return charge_time_hours *60;
-        }
-
-        if (
-            batteryCapacity && !isNaN(batteryCapacity) &&
-            initialLevel !== undefined && !isNaN(initialLevel) &&
-            targetLevel !== undefined && !isNaN(targetLevel) &&
-            chargingType && chargingSpeeds[chargingType]
-        ) {
-            let adjustedInitial = initialLevel;
-            let adjustedTarget = targetLevel;
-            if (adjustedInitial === 0) adjustedInitial = 0.1;
-            if (adjustedTarget === 100) adjustedTarget = 99.9;
-
-            const chargerPowerKw = chargingSpeeds[chargingType];
+        // Calculate cost and time estimates using unified backend-consistent logic
+        // Only use charging time mode if user entered a value and targetLevel is blank or NaN
+        if (!isNaN(chargingTime) && chargingTime > 0 && (isNaN(targetLevel) || targetLevel === "") && chargingType && !isNaN(batteryCapacity) && !isNaN(initialLevel)) {
+            // Charging time input mode
+            const chargerPower = chargingSpeeds[chargingType] || 7.4;
             const efficiency = chargingEfficiency[chargingType] || 0.85;
             const chargingRate = chargingRates[chargingType] || 15;
-
-            // Charging time in minutes using logistic model
-            let chargingTimeMinutes = evChargingTimeLogistic(
-                adjustedInitial,
-                adjustedTarget,
-                chargerPowerKw,
-                batteryCapacity,
-                efficiency,
-                k
-            );
-            if (!isFinite(chargingTimeMinutes) || chargingTimeMinutes < 0) {
-                // Fallback to linear if math error
-                const batteryPercentageToCharge = adjustedTarget - adjustedInitial;
-                const energyNeededKwh = (batteryPercentageToCharge / 100) * batteryCapacity;
-                chargingTimeMinutes = (energyNeededKwh / chargerPowerKw) * 60;
-            }
-
-            // Cost calculation (matches backend)
-            const batteryPercentageToCharge = adjustedTarget - adjustedInitial;
-            const energyNeededKwh = (batteryPercentageToCharge / 100) * batteryCapacity;
-            const actualEnergyConsumed = energyNeededKwh / efficiency;
-            const chargingCost = actualEnergyConsumed * chargingRate;
-
-            // UI update
-            let estimatedTimeMinutes = Math.round(chargingTimeMinutes);
-            let estimatedTimeDisplay;
-            if (estimatedTimeMinutes >= 60) {
-                const hours = Math.floor(estimatedTimeMinutes / 60);
-                const minutes = estimatedTimeMinutes % 60;
-                estimatedTimeDisplay = `${hours} hrs ${minutes} min`;
-            } else {
-                estimatedTimeDisplay = `${estimatedTimeMinutes} min`;
-            }
-            document.getElementById('estimatedTime').textContent = estimatedTimeDisplay;
+            const hours = chargingTime / 60.0;
+            const energyAdded = chargerPower * hours * efficiency;
+            const maxEnergyAddable = ((100 - initialLevel) / 100) * batteryCapacity;
+            const usableEnergy = Math.min(energyAdded, maxEnergyAddable);
+            const finalBattery = Math.min(initialLevel + (usableEnergy / batteryCapacity) * 100, 100);
+            const chargingCost = (usableEnergy / efficiency) * chargingRate;
+            document.getElementById('estimatedTime').textContent = Math.round(chargingTime);
             document.getElementById('estimatedCost').textContent = Math.round(chargingCost);
+            document.getElementById('estimatedFinalBattery').textContent = Math.round(finalBattery * 10) / 10;
+            document.getElementById('chargingEstimate').style.display = 'block';
+        // Only use target battery mode if user entered a value and chargingTime is blank or NaN
+        } else if (!isNaN(targetLevel) && targetLevel > initialLevel && targetLevel <= 100 && (isNaN(chargingTime) || chargingTime === "") && chargingType && !isNaN(batteryCapacity) && !isNaN(initialLevel)) {
+            // Target battery input mode
+            const chargerPower = chargingSpeeds[chargingType] || 7.4;
+            const efficiency = chargingEfficiency[chargingType] || 0.85;
+            const chargingRate = chargingRates[chargingType] || 15;
+            const energyNeeded = ((targetLevel - initialLevel) / 100) * batteryCapacity;
+            const chargingTimeHours = energyNeeded / (chargerPower * efficiency);
+            const chargingTimeMinutes = chargingTimeHours * 60;
+            const chargingCost = (energyNeeded / efficiency) * chargingRate;
+            document.getElementById('estimatedTime').textContent = Math.round(chargingTimeMinutes);
+            document.getElementById('estimatedCost').textContent = Math.round(chargingCost);
+            document.getElementById('estimatedFinalBattery').textContent = Math.round(targetLevel * 10) / 10;
             document.getElementById('chargingEstimate').style.display = 'block';
         } else {
+            document.getElementById('estimatedCost').textContent = '-';
             document.getElementById('chargingEstimate').style.display = 'none';
         }
     }

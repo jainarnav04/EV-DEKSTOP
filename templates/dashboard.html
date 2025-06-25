@@ -546,6 +546,92 @@ body {
                     updateChargingEstimate();
                 });
 
+                // Patch: Format estimated time in hours/minutes if > 60
+                window.updateChargingEstimate = function() {
+                    const batteryCapacity = parseFloat(document.getElementById('batteryCapacity').value);
+                    const initialLevel = parseFloat(document.getElementById('initialBatteryLevel').value);
+                    const targetLevel = parseFloat(document.getElementById('targetBatteryLevel').value);
+                    const chargingType = document.getElementById('vehicleChargingType').value;
+                    const chargingTimeInput = document.getElementById('chargingTimeMinutes');
+                    const chargingTime = parseFloat(chargingTimeInput.value);
+
+                    const chargingRates = {
+                        'AC Type 1': 15,
+                        'AC Type 2': 18,
+                        'CCS': 25,
+                        'CHAdeMO': 25,
+                        'GB/T': 20,
+                    };
+                    const chargingSpeeds = {
+                        'AC Type 1': 7.4,
+                        'AC Type 2': 22.0,
+                        'CCS': 150.0,
+                        'CHAdeMO': 62.5,
+                        'GB/T': 120.0,
+                    };
+                    const chargingEfficiency = {
+                        'AC Type 1': 0.85,
+                        'AC Type 2': 0.88,
+                        'CCS': 0.92,
+                        'CHAdeMO': 0.92,
+                        'GB/T': 0.90,
+                    };
+
+                    let estTimeVal = '-';
+                    let estCostVal = '-';
+                    let estFinalBattVal = '-';
+                    let show = false;
+
+                    if (!isNaN(chargingTime) && chargingTime > 0 && (isNaN(targetLevel) || targetLevel === "") && chargingType && !isNaN(batteryCapacity) && !isNaN(initialLevel)) {
+                        // Charging time input mode
+                        const chargerPower = chargingSpeeds[chargingType] || 7.4;
+                        const efficiency = chargingEfficiency[chargingType] || 0.85;
+                        const chargingRate = chargingRates[chargingType] || 15;
+                        const hours = chargingTime / 60.0;
+                        const energyAdded = chargerPower * hours * efficiency;
+                        const maxEnergyAddable = ((100 - initialLevel) / 100) * batteryCapacity;
+                        const usableEnergy = Math.min(energyAdded, maxEnergyAddable);
+                        const finalBattery = Math.min(initialLevel + (usableEnergy / batteryCapacity) * 100, 100);
+                        const chargingCost = (usableEnergy / efficiency) * chargingRate;
+                        // --- Format time ---
+                        if (chargingTime >= 60) {
+                            const h = Math.floor(chargingTime / 60);
+                            const m = Math.round(chargingTime % 60);
+                            estTimeVal = `${h} hr${h>1?'s':''} ${m} min`;
+                        } else {
+                            estTimeVal = `${Math.round(chargingTime)} min`;
+                        }
+                        estCostVal = Math.round(chargingCost);
+                        estFinalBattVal = Math.round(finalBattery * 10) / 10;
+                        show = true;
+                    } else if (!isNaN(targetLevel) && targetLevel > initialLevel && targetLevel <= 100 && (isNaN(chargingTime) || chargingTime === "") && chargingType && !isNaN(batteryCapacity) && !isNaN(initialLevel)) {
+                        // Target battery input mode
+                        const chargerPower = chargingSpeeds[chargingType] || 7.4;
+                        const efficiency = chargingEfficiency[chargingType] || 0.85;
+                        const chargingRate = chargingRates[chargingType] || 15;
+                        const energyNeeded = ((targetLevel - initialLevel) / 100) * batteryCapacity;
+                        const chargingTimeHours = energyNeeded / (chargerPower * efficiency);
+                        const chargingTimeMinutes = chargingTimeHours * 60;
+                        const chargingCost = (energyNeeded / efficiency) * chargingRate;
+                        // --- Format time ---
+                        if (chargingTimeMinutes >= 60) {
+                            const h = Math.floor(chargingTimeMinutes / 60);
+                            const m = Math.round(chargingTimeMinutes % 60);
+                            estTimeVal = `${h} hr${h>1?'s':''} ${m} min`;
+                        } else {
+                            estTimeVal = `${Math.round(chargingTimeMinutes)} min`;
+                        }
+                        estCostVal = Math.round(chargingCost);
+                        estFinalBattVal = Math.round(targetLevel * 10) / 10;
+                        show = true;
+                    }
+                    document.getElementById('estimatedTime').textContent = estTimeVal;
+                    document.getElementById('estimatedCost').textContent = estCostVal;
+                    document.getElementById('estimatedFinalBattery').textContent = estFinalBattVal;
+                    document.getElementById('chargingEstimate').style.display = show ? 'block' : 'none';
+                }
+
+
                 // Ensure both fields are enabled and empty on modal open
                 function resetMutualDisableFields() {
                     targetBatteryInput.disabled = false;

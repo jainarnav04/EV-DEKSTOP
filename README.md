@@ -64,6 +64,8 @@ pip install -r requirements.txt
 
 4. Configure environment variables:
    - Create a `.env` file in the project root
+   - Add your Firebase credentials with name "GOOGLE_APPLICATION_CREDENTIALS"
+   - Add your Google API Services key with name "GOOGLE_MAPS_API_KEY"
    - Add your Firebase credentials and other configuration
 
 ## Usage

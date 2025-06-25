@@ -66,7 +66,6 @@ pip install -r requirements.txt
    - Create a `.env` file in the project root
    - Add your Firebase credentials with name "GOOGLE_APPLICATION_CREDENTIALS"
    - Add your Google API Services key with name "GOOGLE_MAPS_API_KEY"
-   - Add your Firebase credentials and other configuration
 
 ## Usage
 
@@ -93,10 +92,6 @@ python auth.py
 3. Commit your changes
 4. Push to the branch
 5. Create a Pull Request
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
 
 ## Support
 

@@ -5,9 +5,9 @@ from datetime import datetime, date, timedelta # Use direct imports for datetime
 import os
 from dotenv import load_dotenv
 load_dotenv()
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
+# --- SendGrid imports ---
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail
 
 # Flask app initialization
 app = Flask(__name__)
@@ -15,30 +15,28 @@ app = Flask(__name__)
 # ==================== EMAIL OTP SENDER ====================
 def send_otp_email(receiver_email, otp):
     """
-    Send an OTP email using SMTP (Gmail).
+    Send an OTP email using SendGrid API.
     Credentials are loaded from environment variables:
-      EMAIL_SENDER: sender email address
-      EMAIL_PASSWORD: sender email password or app password
+    - SENDGRID_API_KEY
+    - EMAIL_SENDER
     """
     sender_email = os.environ.get("EMAIL_SENDER")
-    sender_password = os.environ.get("EMAIL_PASSWORD")
-    if not sender_email or not sender_password:
-        raise Exception("Email credentials not set in environment variables.")
+    sendgrid_api_key = os.environ.get("SENDGRID_API_KEY")
+    if not sender_email or not sendgrid_api_key:
+        raise Exception("SendGrid credentials not set in environment variables.")
 
-    msg = MIMEMultipart()
-    msg['From'] = sender_email
-    msg['To'] = receiver_email
-    msg['Subject'] = "Your Easy Vahan Login Credentials Reset Request"
-    msg.attach(MIMEText(f"Your OTP is: {otp}", 'plain'))
-
+    message = Mail(
+        from_email=sender_email,
+        to_emails=receiver_email,
+        subject="Your Easy Vahan Login Credentials Reset Request",
+        plain_text_content=f"Your OTP is: {otp}\n\nThis OTP is valid for 5 minutes.\nIf you did not request this, please ignore this email.\n\nThanks,\nEasy Vahan Team"
+    )
     try:
-        with smtplib.SMTP('smtp.gmail.com', 587) as server:
-            server.starttls()
-            server.login(sender_email, sender_password)
-            server.sendmail(sender_email, receiver_email, msg.as_string())
-        print(f"OTP sent to {receiver_email}")
+        sg = SendGridAPIClient(sendgrid_api_key)
+        response = sg.send(message)
+        print(f"OTP sent to {receiver_email}, status code: {response.status_code}")
     except Exception as e:
-        print(f"Failed to send OTP: {e}")
+        print(f"Error sending OTP email: {e}")
         raise
 
 

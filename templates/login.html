@@ -588,6 +588,7 @@
         </div>
     </div>
 
+    {% include 'otp_modal.html' %}
     <div class="container">
         <div class="form-box login">
             <form action="#" class="login">
@@ -689,6 +690,9 @@
             function openForgotModal() {
                 forgotModal.style.display = 'flex';
                 document.getElementById('resetStationId').focus();
+                document.getElementById('forgotErrorMessage').style.display = 'none';
+                document.getElementById('forgotSuccessMessage').style.display = 'none';
+                forgotForm.reset();
             }
 
             function closeForgotModal() {
@@ -735,12 +739,10 @@
                         return;
                     }
 
-                    // Add loading state
                     submitBtn.classList.add('loading');
                     submitBtn.textContent = '';
 
                     try {
-                        // Simulate API call (replace with actual API endpoint)
                         const response = await fetch('/reset-access-key', {
                             method: 'POST',
                             headers: {
@@ -748,16 +750,11 @@
                             },
                             body: JSON.stringify({ station_id: stationId, email: email })
                         });
-
                         const data = await response.json();
-
                         if (data.success) {
-                            successMessage.textContent = data.message;
-                            successMessage.style.display = 'block';
-                            errorMessage.style.display = 'none';
-                            forgotForm.reset();
-                            // Close modal after 3 seconds
-                            setTimeout(closeForgotModal, 3000);
+                            // Hide forgot modal, show OTP modal
+                            closeForgotModal();
+                            openOtpModal(stationId);
                         } else {
                             errorMessage.textContent = data.message || 'Station ID or Email not found. Please check and try again.';
                             errorMessage.style.display = 'block';
@@ -768,9 +765,80 @@
                         errorMessage.style.display = 'block';
                         successMessage.style.display = 'none';
                     } finally {
-                        // Remove loading state
                         submitBtn.classList.remove('loading');
                         submitBtn.textContent = 'Send Reset Link';
+                    }
+                });
+            }
+
+            // OTP Modal logic
+            const otpModal = document.getElementById('otpModal');
+            const otpForm = document.getElementById('otpForm');
+            const otpCloseBtn = otpModal ? otpModal.querySelector('.close-modal') : null;
+            function openOtpModal(stationId) {
+                otpModal.style.display = 'flex';
+                document.getElementById('otpStationId').value = stationId;
+                document.getElementById('otpInput').value = '';
+                document.getElementById('newAccessKey').value = '';
+                document.getElementById('otpErrorMessage').style.display = 'none';
+                document.getElementById('otpSuccessMessage').style.display = 'none';
+                document.getElementById('otpInput').focus();
+            }
+            function closeOtpModal() {
+                otpModal.style.display = 'none';
+                otpForm.reset();
+                document.getElementById('otpErrorMessage').style.display = 'none';
+                document.getElementById('otpSuccessMessage').style.display = 'none';
+            }
+            if (otpCloseBtn) {
+                otpCloseBtn.addEventListener('click', closeOtpModal);
+            }
+            window.onclick = function(event) {
+                if (event.target === forgotModal) closeForgotModal();
+                if (event.target === otpModal) closeOtpModal();
+            }
+            if (otpForm) {
+                otpForm.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    const stationId = document.getElementById('otpStationId').value.trim();
+                    const otp = document.getElementById('otpInput').value.trim();
+                    const newAccessKey = document.getElementById('newAccessKey').value.trim();
+                    const submitBtn = this.querySelector('.btn');
+                    const successMessage = document.getElementById('otpSuccessMessage');
+                    const errorMessage = document.getElementById('otpErrorMessage');
+                    if (!otp || !newAccessKey) {
+                        errorMessage.textContent = 'Please enter both OTP and new access key.';
+                        errorMessage.style.display = 'block';
+                        successMessage.style.display = 'none';
+                        return;
+                    }
+                    submitBtn.classList.add('loading');
+                    submitBtn.textContent = '';
+                    try {
+                        const response = await fetch('/verify-otp', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ station_id: stationId, otp: otp, new_access_key: newAccessKey })
+                        });
+                        const data = await response.json();
+                        if (data.success) {
+                            successMessage.textContent = data.message || 'Access key changed successfully!';
+                            successMessage.style.display = 'block';
+                            errorMessage.style.display = 'none';
+                            otpForm.reset();
+                            setTimeout(closeOtpModal, 3000);
+                        } else {
+                            errorMessage.textContent = data.message || 'Invalid OTP or expired.';
+                            errorMessage.style.display = 'block';
+                            successMessage.style.display = 'none';
+                        }
+                    } catch (error) {
+                        errorMessage.textContent = 'An error occurred. Please try again.';
+                        errorMessage.style.display = 'block';
+                        successMessage.style.display = 'none';
+                    } finally {
+                        submitBtn.classList.remove('loading');
+                        submitBtn.textContent = 'Verify & Change Access Key';
                     }
                 });
             }
@@ -796,6 +864,8 @@
 
             // Form validation
             forms.forEach(form => {
+                // Skip forgotForm and otpForm, which have their own handlers
+                if (form.id === 'forgotForm' || form.id === 'otpForm') return;
                 form.addEventListener('submit', async function(e) {
                     e.preventDefault();
                     let isValid = true;

@@ -1,12 +1,47 @@
 from flask import Flask, request, jsonify, render_template, session, redirect, url_for
 import firebase_admin
-from firebase_admin import credentials, firestore
-import math  
+from firebase_admin import credentials, firestore 
 from datetime import datetime, date, timedelta # Use direct imports for datetime, date, timedelta
-import random   # Import random module
 import os
 from dotenv import load_dotenv
 load_dotenv()
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+
+# Flask app initialization
+app = Flask(__name__)
+
+# ==================== EMAIL OTP SENDER ====================
+def send_otp_email(receiver_email, otp):
+    """
+    Send an OTP email using SMTP (Gmail).
+    Credentials are loaded from environment variables:
+      EMAIL_SENDER: sender email address
+      EMAIL_PASSWORD: sender email password or app password
+    """
+    sender_email = os.environ.get("EMAIL_SENDER")
+    sender_password = os.environ.get("EMAIL_PASSWORD")
+    if not sender_email or not sender_password:
+        raise Exception("Email credentials not set in environment variables.")
+
+    msg = MIMEMultipart()
+    msg['From'] = sender_email
+    msg['To'] = receiver_email
+    msg['Subject'] = "Your Easy Vahan Login Credentials Reset Request"
+    msg.attach(MIMEText(f"Your OTP is: {otp}", 'plain'))
+
+    try:
+        with smtplib.SMTP('smtp.gmail.com', 587) as server:
+            server.starttls()
+            server.login(sender_email, sender_password)
+            server.sendmail(sender_email, receiver_email, msg.as_string())
+        print(f"OTP sent to {receiver_email}")
+    except Exception as e:
+        print(f"Failed to send OTP: {e}")
+        raise
+
+
 # Custom Exception Classes
 class InvalidUsage(Exception):
     status_code = 400
@@ -141,8 +176,21 @@ def reset_access_key():
         station_data = doc.to_dict()
         if station_data.get("email") == email:
             print(f"Simulating sending reset link to {email} for Station ID: {station_id}")
-            # --- Email Sending Integration Placeholder ---
+            # --- Email Sending Integration ---
+            # Generate a secure random 6-digit OTP
+            import secrets
+            from datetime import timezone
+            otp = str(secrets.randbelow(900000) + 100000)
+            # Store OTP and expiration (5 min from now) in Firestore
+            otp_expiry = datetime.now(timezone.utc) + timedelta(minutes=5)
+            doc_ref.update({
+                'reset_otp': otp,
+                'reset_otp_expiry': otp_expiry
+            })
+            send_otp_email(email, otp)
+            print(f"Successfully sent OTP to {email}")
             # In a real application, you would integrate with an email service here
+
             # Example (using a hypothetical `send_email` function):
             # try:
             #     send_email(
@@ -155,7 +203,7 @@ def reset_access_key():
             #     print(f"Error sending email: {email_exc}")
             #     # Consider returning an error here, or logging it and proceeding
             # ---------------------------------------------
-            return jsonify({"success": True, "message": "If the Station ID and Email match, your access key has been sent to your email."}), 200
+            return jsonify({"success": True, "message": "OTP sent to your registered email. Enter the OTP to reset your access key."}), 200
         else:
             return jsonify({"success": False, "message": "Station ID and Email do not match."}), 404
     else:
@@ -906,6 +954,47 @@ def station_queue(station_id):
             } for b in bks
         ], key=lambda x: x['start_time'])
     return jsonify({"slots": result})
+
+
+@app.route("/verify-otp", methods=["POST"])
+def verify_otp():
+    data = request.json
+    station_id = data.get("station_id")
+    otp = data.get("otp")
+    new_access_key = data.get("new_access_key")
+    if not station_id or not otp or not new_access_key:
+        return jsonify({"success": False, "message": "Missing required fields."}), 400
+
+    doc_ref = db.collection("charging_stations").document(station_id)
+    doc = doc_ref.get()
+    if not doc.exists:
+        return jsonify({"success": False, "message": "Station ID not found."}), 404
+    station_data = doc.to_dict()
+    stored_otp = station_data.get("reset_otp")
+    otp_expiry = station_data.get("reset_otp_expiry")
+    if not stored_otp or not otp_expiry:
+        return jsonify({"success": False, "message": "OTP not requested or expired."}), 400
+
+    # Convert Firestore timestamp to datetime if needed
+    if hasattr(otp_expiry, 'to_datetime'):
+        otp_expiry = otp_expiry.to_datetime()
+    elif isinstance(otp_expiry, dict) and 'seconds' in otp_expiry:
+        from datetime import timezone
+        otp_expiry = datetime.fromtimestamp(otp_expiry['seconds'], tz=timezone.utc)
+
+    if otp != stored_otp:
+        return jsonify({"success": False, "message": "Invalid OTP."}), 400
+    from datetime import timezone
+    if datetime.now(timezone.utc) > otp_expiry:
+        return jsonify({"success": False, "message": "OTP expired."}), 400
+
+    # Update access key and clear OTP
+    doc_ref.update({
+        'access_key': new_access_key,
+        'reset_otp': firestore.DELETE_FIELD,
+        'reset_otp_expiry': firestore.DELETE_FIELD
+    })
+    return jsonify({"success": True, "message": "Access key updated successfully."}), 200
 
 if __name__ == "__main__":
     app.run(debug=True)

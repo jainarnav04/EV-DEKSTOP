@@ -527,157 +527,6 @@ body {
                 <label for="chargingTimeMinutes">Charging Time (min): </label>
                 <input type="number" id="chargingTimeMinutes" name="charging_time_minutes" min="0" max="1440">
             </div>
-            <script>
-            document.addEventListener('DOMContentLoaded', function() {
-                const targetBatteryInput = document.getElementById('targetBatteryLevel');
-                const chargingTimeInput = document.getElementById('chargingTimeMinutes');
-
-                // Make target and time mutually exclusive
-                targetBatteryInput.addEventListener('input', function() {
-                    if (targetBatteryInput.value !== "" && !isNaN(parseFloat(targetBatteryInput.value))) {
-                        chargingTimeInput.value = "";
-                    }
-                    updateChargingEstimate();
-                });
-                chargingTimeInput.addEventListener('input', function() {
-                    if (chargingTimeInput.value !== "" && !isNaN(parseFloat(chargingTimeInput.value))) {
-                        targetBatteryInput.value = "";
-                    }
-                    updateChargingEstimate();
-                });
-
-                // Patch: Format estimated time in hours/minutes if > 60
-                window.updateChargingEstimate = function() {
-                    const batteryCapacity = parseFloat(document.getElementById('batteryCapacity').value);
-                    const initialLevel = parseFloat(document.getElementById('initialBatteryLevel').value);
-                    const targetLevel = parseFloat(document.getElementById('targetBatteryLevel').value);
-                    const chargingType = document.getElementById('vehicleChargingType').value;
-                    const chargingTimeInput = document.getElementById('chargingTimeMinutes');
-                    const chargingTime = parseFloat(chargingTimeInput.value);
-
-                    const chargingRates = {
-                        'AC Type 1': 15,
-                        'AC Type 2': 18,
-                        'CCS': 25,
-                        'CHAdeMO': 25,
-                        'GB/T': 20,
-                    };
-                    const chargingSpeeds = {
-                        'AC Type 1': 7.4,
-                        'AC Type 2': 22.0,
-                        'CCS': 150.0,
-                        'CHAdeMO': 62.5,
-                        'GB/T': 120.0,
-                    };
-                    const chargingEfficiency = {
-                        'AC Type 1': 0.85,
-                        'AC Type 2': 0.88,
-                        'CCS': 0.92,
-                        'CHAdeMO': 0.92,
-                        'GB/T': 0.90,
-                    };
-
-                    let estTimeVal = '-';
-                    let estCostVal = '-';
-                    let estFinalBattVal = '-';
-                    let show = false;
-
-                    if (!isNaN(chargingTime) && chargingTime > 0 && (isNaN(targetLevel) || targetLevel === "") && chargingType && !isNaN(batteryCapacity) && !isNaN(initialLevel)) {
-                        // Charging time input mode
-                        const chargerPower = chargingSpeeds[chargingType] || 7.4;
-                        const efficiency = chargingEfficiency[chargingType] || 0.85;
-                        const chargingRate = chargingRates[chargingType] || 15;
-                        const hours = chargingTime / 60.0;
-                        const energyAdded = chargerPower * hours * efficiency;
-                        const maxEnergyAddable = ((100 - initialLevel) / 100) * batteryCapacity;
-                        const usableEnergy = Math.min(energyAdded, maxEnergyAddable);
-                        const finalBattery = Math.min(initialLevel + (usableEnergy / batteryCapacity) * 100, 100);
-                        const chargingCost = (usableEnergy / efficiency) * chargingRate;
-                        // --- Format time ---
-                        if (chargingTime >= 60) {
-                            const h = Math.floor(chargingTime / 60);
-                            const m = Math.round(chargingTime % 60);
-                            estTimeVal = `${h} hr${h>1?'s':''} ${m} min`;
-                        } else {
-                            estTimeVal = `${Math.round(chargingTime)} min`;
-                        }
-                        estCostVal = Math.round(chargingCost);
-                        estFinalBattVal = Math.round(finalBattery * 10) / 10;
-                        show = true;
-                    } else if (!isNaN(targetLevel) && targetLevel > initialLevel && targetLevel <= 100 && (isNaN(chargingTime) || chargingTime === "") && chargingType && !isNaN(batteryCapacity) && !isNaN(initialLevel)) {
-                        // Target battery input mode
-                        const chargerPower = chargingSpeeds[chargingType] || 7.4;
-                        const efficiency = chargingEfficiency[chargingType] || 0.85;
-                        const chargingRate = chargingRates[chargingType] || 15;
-                        const energyNeeded = ((targetLevel - initialLevel) / 100) * batteryCapacity;
-                        const chargingTimeHours = energyNeeded / (chargerPower * efficiency);
-                        const chargingTimeMinutes = chargingTimeHours * 60;
-                        const chargingCost = (energyNeeded / efficiency) * chargingRate;
-                        // --- Format time ---
-                        if (chargingTimeMinutes >= 60) {
-                            const h = Math.floor(chargingTimeMinutes / 60);
-                            const m = Math.round(chargingTimeMinutes % 60);
-                            estTimeVal = `${h} hr${h>1?'s':''} ${m} min`;
-                        } else {
-                            estTimeVal = `${Math.round(chargingTimeMinutes)} min`;
-                        }
-                        estCostVal = Math.round(chargingCost);
-                        estFinalBattVal = Math.round(targetLevel * 10) / 10;
-                        show = true;
-                    }
-                    document.getElementById('estimatedTime').textContent = estTimeVal;
-                    document.getElementById('estimatedCost').textContent = estCostVal;
-                    document.getElementById('estimatedFinalBattery').textContent = estFinalBattVal;
-                    document.getElementById('chargingEstimate').style.display = show ? 'block' : 'none';
-                }
-
-
-                // Ensure both fields are enabled and empty on modal open
-                function resetMutualDisableFields() {
-                    targetBatteryInput.disabled = false;
-                    chargingTimeInput.disabled = false;
-                    targetBatteryInput.value = '';
-                    chargingTimeInput.value = '';
-                }
-                // Reset fields when modal is opened (when display changes to flex)
-                const vehicleModal = document.getElementById('vehicleModal');
-                function watchVehicleModalOpen() {
-                    const observer = new MutationObserver(() => {
-                        if (vehicleModal.style.display === 'flex') {
-                            resetMutualDisableFields();
-                        }
-                    });
-                    observer.observe(vehicleModal, { attributes: true, attributeFilter: ['style'] });
-                }
-                watchVehicleModalOpen();
-
-                function handleMutualDisable() {
-                    const targetBatteryFilled = targetBatteryInput.value !== '' && !isNaN(Number(targetBatteryInput.value));
-                    const chargingTimeFilled = chargingTimeInput.value !== '' && !isNaN(Number(chargingTimeInput.value));
-
-                    if (targetBatteryFilled) {
-                        chargingTimeInput.value = '';
-                        chargingTimeInput.disabled = true;
-                    } else if (!chargingTimeFilled) {
-                        chargingTimeInput.disabled = false;
-                    }
-
-                    if (chargingTimeFilled) {
-                        targetBatteryInput.value = '';
-                        targetBatteryInput.disabled = true;
-                    } else if (!targetBatteryFilled) {
-                        targetBatteryInput.disabled = false;
-                    }
-                }
-                targetBatteryInput.addEventListener('input', handleMutualDisable);
-                chargingTimeInput.addEventListener('input', handleMutualDisable);
-
-                // Also reset fields on DOMContentLoaded (first page load)
-                resetMutualDisableFields();
-            });
-            </script>
-
-            
 
             <div class="chargingCost" id="chargingEstimate" style="display: none; margin-top: 15px; ; padding: 10px; background:rgba(0, 0, 0, .2); border-radius: 5px;">
                 <h4>Charging Estimates</h4>
@@ -726,7 +575,7 @@ body {
 
                 <label>Location on Map:</label>
                 <input id="map-search" type="text" placeholder="Search for location..." style="width:100%;margin-bottom:10px;padding:8px;border-radius:4px;border:1px solid #ccc;">
-                <div id="map" style="height: 300px; width: 100%; margin-bottom: 20px; border-radius: 5px;"></div>
+                <div id="modal-map" style="height: 300px; width: 100%; margin-bottom: 20px; border-radius: 5px;"></div>
                 <input type="hidden" id="latitude" name="latitude" value="{{ station.latitude if station.latitude else '' }}">
                 <input type="hidden" id="longitude" name="longitude" value="{{ station.longitude if station.longitude else '' }}">
 
@@ -737,7 +586,6 @@ body {
             </form>
         </div>
     </div>
-
 
 <script>
     // Track form changes
@@ -962,7 +810,7 @@ body {
 
                 // Re-initialize the display map to reflect updated coordinates
                 if (typeof google !== 'undefined' && typeof google.maps !== 'undefined') {
-                    initDisplayMap(); 
+                    if (window.initMap) window.initMap();
                 } else {
                     console.warn("Google Maps API not loaded, cannot re-initialize display map.");
                 }
@@ -1287,163 +1135,9 @@ body {
     // Ensure the update modal is hidden when the page loads
     document.addEventListener('DOMContentLoaded', function() {
         document.getElementById("Modal").style.display = "none";
-        // Debug log (already present) check for google and google.maps
-        console.log("DOMContentLoaded: google defined?", typeof google !== 'undefined', "google.maps defined?", typeof google.maps !== 'undefined');
         refreshVehicleTable(); // Initial load of the table after DOM is ready
     });
 
-    let map, marker;
-    let displayMap, displayMarker;
-
-    function initMap() {
-        // Default to a central location if station coords not available
-        const defaultLat = parseFloat(document.getElementById('latitude').value) || 26.9124;
-        const defaultLng = parseFloat(document.getElementById('longitude').value) || 75.7873;
-        const initialLocation = { lat: defaultLat, lng: defaultLng };
-
-        map = new google.maps.Map(document.getElementById('map'), {
-            center: initialLocation,
-            zoom: 12,
-            mapTypeControl: false, // Optional: hide map type controls
-            streetViewControl: false, // Optional: hide street view control
-            fullscreenControl: false, // Optional: hide fullscreen control
-        });
-
-        marker = new google.maps.Marker({
-            position: initialLocation,
-            map: map,
-            draggable: true,
-            title: "Drag to set location",
-        });
-
-        // Update lat/lng inputs when marker is dragged
-        marker.addListener('dragend', function() {
-            const newPosition = marker.getPosition();
-            document.getElementById('latitude').value = newPosition.lat();
-            document.getElementById('longitude').value = newPosition.lng();
-            formChanged = true; // Mark form as changed
-
-            // Update the display map marker position as well
-            if (displayMarker) {
-                displayMarker.setPosition(newPosition);
-            }
-        });
-
-        // Update lat/lng inputs when map is clicked
-        map.addListener('click', function(event) {
-            marker.setPosition(event.latLng);
-            document.getElementById('latitude').value = event.latLng.lat();
-            document.getElementById('longitude').value = event.latLng.lng();
-            formChanged = true; // Mark form as changed
-
-            // Update the display map marker position as well
-            if (displayMarker) {
-                displayMarker.setPosition(event.latLng);
-            }
-        });
-
-        // Re-center map and marker when modal opens
-        document.getElementById('Modal').addEventListener('transitionend', function() {
-            if (this.style.display === 'flex') { // Check if modal is visible
-                google.maps.event.trigger(map, 'resize');
-                // Update map center with current station data when modal opens
-                const currentLat = parseFloat(document.getElementById('latitude').value) || 26.9124;
-                const currentLng = parseFloat(document.getElementById('longitude').value) || 75.7873;
-                const currentPosition = { lat: currentLat, lng: currentLng };
-                map.setCenter(currentPosition);
-                marker.setPosition(currentPosition);
-            }
-        });
-        initDisplayMap(); // Added: Initialize the display map after the main map is ready
-
-        // Add Places Autocomplete search box
-        const input = document.getElementById('map-search');
-        if (input) {
-            const autocomplete = new google.maps.places.Autocomplete(input);
-            autocomplete.bindTo('bounds', map);
-
-            autocomplete.addListener('place_changed', function() {
-                const place = autocomplete.getPlace();
-                if (!place.geometry) {
-                    alert("No details available for input: '" + place.name + "'");
-                    return;
-                }
-
-                // If the place has a geometry, then present it on a map.
-                if (place.geometry.viewport) {
-                    map.fitBounds(place.geometry.viewport);
-                } else {
-                    map.setCenter(place.geometry.location);
-                    map.setZoom(17);
-                }
-                marker.setPosition(place.geometry.location);
-
-                // Update hidden latitude/longitude fields
-                document.getElementById('latitude').value = place.geometry.location.lat();
-                document.getElementById('longitude').value = place.geometry.location.lng();
-                formChanged = true;
-            });
-        }
-    }
-
-    // Function to initialize the display map on the dashboard
-    function initDisplayMap() {
-        const displayMapElement = document.getElementById('display-map');
-        if (!displayMapElement) {
-            console.error("Display map element not found!");
-            return;
-        }
-
-        // Use current coordinates from the form fields, not Jinja template
-        const stationLat = parseFloat(document.getElementById('latitude').value) || 26.9124;
-        const stationLng = parseFloat(document.getElementById('longitude').value) || 75.7873;
-        const stationLocation = { lat: stationLat, lng: stationLng };
-
-        // If map exists, just update its center and marker
-        if (displayMap) {
-            displayMap.setCenter(stationLocation);
-            if (displayMarker) {
-                displayMarker.setPosition(stationLocation);
-            } else {
-                displayMarker = new google.maps.Marker({
-                    position: stationLocation,
-                    map: displayMap,
-                    draggable: false,
-                    title: "Charging Station Location"
-                });
-            }
-            google.maps.event.trigger(displayMap, 'resize');
-            return;
-        }
-
-        // Create new map if it doesn't exist
-        displayMap = new google.maps.Map(displayMapElement, {
-            center: stationLocation,
-            zoom: 15,
-            disableDefaultUI: true,
-            gestureHandling: 'none',
-            zoomControl: false
-        });
-
-        displayMarker = new google.maps.Marker({
-            position: stationLocation,
-            map: displayMap,
-            draggable: false,
-            title: "Charging Station Location"
-        });
-
-        google.maps.event.trigger(displayMap, 'resize');
-    }
-
-    // Existing openModal function, ensure it calls initMap if map not initialized
-    const originalOpenModal = openModal;
-    openModal = function() {
-        originalOpenModal();
-        // Check if google maps API is loaded and the map variable itself is not yet initialized
-        if (typeof google !== 'undefined' && typeof google.maps !== 'undefined' && !map) {
-            initMap(); // Initialize map only once if not already
-        }
-    };
 
     // Add this to your existing JavaScript
     function updateChargingEstimate() {
@@ -1522,8 +1216,28 @@ body {
     document.getElementById('initialBatteryLevel').addEventListener('input', updateChargingEstimate);
     document.getElementById('targetBatteryLevel').addEventListener('input', updateChargingEstimate);
     document.getElementById('vehicleChargingType').addEventListener('change', updateChargingEstimate);
+    document.getElementById('chargingTimeMinutes').addEventListener('input', updateChargingEstimate);
 
-    window.initMap = initMap;
+    // Disable one input if the other is filled
+    function syncChargingInputs() {
+        const targetInput = document.getElementById('targetBatteryLevel');
+        const timeInput = document.getElementById('chargingTimeMinutes');
+        if (targetInput.value && targetInput.value.trim() !== '' && !isNaN(Number(targetInput.value))) {
+            timeInput.disabled = true;
+        } else {
+            timeInput.disabled = false;
+        }
+        if (timeInput.value && timeInput.value.trim() !== '' && !isNaN(Number(timeInput.value))) {
+            targetInput.disabled = true;
+        } else {
+            targetInput.disabled = false;
+        }
+    }
+    document.getElementById('targetBatteryLevel').addEventListener('input', syncChargingInputs);
+    document.getElementById('chargingTimeMinutes').addEventListener('input', syncChargingInputs);
+    // Run once on load
+    syncChargingInputs();
+    
 
     // Function to sort the vehicle table by arrival time
     function sortVehicleTableByArrivalTime() {
@@ -1624,7 +1338,7 @@ body {
 </script>
 
 <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-<script src="/templates/chngs.js"></script>
+<script src="/static/chngs.js"></script>
 <script>
 
 

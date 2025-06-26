@@ -995,6 +995,9 @@ body {
     function openVehicleModal() {
         document.getElementById("vehicleModal").style.display = "flex";
         trapFocus(document.getElementById("vehicleModal"));
+        // Hide all error messages and reset invalid input styles
+        document.querySelectorAll('#vehicleModal .error-message').forEach(el => el.style.display = 'none');
+        document.querySelectorAll('#vehicleModal .invalid-input').forEach(el => el.classList.remove('invalid-input'));
     }
 
     // Close the Add Vehicle Modal

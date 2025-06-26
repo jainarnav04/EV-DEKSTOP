@@ -1,0 +1,28 @@
+<!-- OTP Verification Modal for Access Key Reset -->
+<div id="otpModal" class="forgot-modal" role="dialog" aria-labelledby="otpModalTitle" style="display:none;">
+    <div class="forgot-modal-content">
+        <span class="close-modal" aria-label="Close Modal">&times;</span>
+        <h2 id="otpModalTitle">Verify OTP</h2>
+        <p>Enter the OTP sent to your registered email and set your new access key.</p>
+        <form id="otpForm">
+            <input type="hidden" id="otpStationId" name="station_id">
+            <div class="input-box">
+                <div class="input-content">
+                    <input type="text" id="otpInput" name="otp" placeholder="Enter OTP" maxlength="6" required>
+                    <i class='bx bxs-key'></i>
+                </div>
+                <div class="error-message">Please enter the OTP</div>
+            </div>
+            <div class="input-box">
+                <div class="input-content">
+                    <input type="password" id="newAccessKey" name="new_access_key" placeholder="Enter New Access Key" required>
+                    <i class='bx bxs-lock-alt'></i>
+                </div>
+                <div class="error-message">Please enter a new access key</div>
+            </div>
+            <button type="submit" class="btn">Verify & Change Access Key</button>
+            <div id="otpSuccessMessage" class="success-message"></div>
+            <div id="otpErrorMessage" class="error-message"></div>
+        </form>
+    </div>
+</div>

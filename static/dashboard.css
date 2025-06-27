@@ -1,0 +1,438 @@
+/* Reset and base styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* Background similar to login page */
+html, body {
+    height: 100%;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    background: linear-gradient(90deg, #e2e2e2, #c9ffd6);
+    font-family: 'Poppins', sans-serif;
+    color: #333;
+    overflow: hidden;
+}
+
+body {
+    height: 100vh;
+    overflow: hidden;
+}
+
+/* Main Dashboard Container */
+.dashboard-container {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    min-height: 100vh;
+    background: white;
+    overflow: hidden;
+}
+
+/* Left Side: Charging Station Details */
+.dashboard-left {
+    flex: 0 0 30%;
+    max-width: 400px;
+    padding: 2rem;
+    background: #4CAF50;
+    color: white;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    height: 100vh;
+    position: sticky;
+    top: 0;
+    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.dashboard-left h2 {
+    margin-bottom: 40px;
+    text-align: center;
+    font-size: 30px;
+}
+
+.dashboard-left p {
+    margin: 10px 10px;
+    font-size: 16px;
+}
+
+/* Right Side: Vehicle List */
+.dashboard-right {
+    flex: 1;
+    padding: 2rem;
+    background: #fff;
+    color: black;
+    overflow-y: auto;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.dashboard-right-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.dashboard-right h2 {
+    margin: 0;
+    color: #333;
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+/* Table styling */
+.dashboard-right table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+    background: white;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.dashboard-right th, 
+.dashboard-right td {
+    padding: 0.75rem 1rem;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+}
+
+.dashboard-right th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+    color: #333;
+}
+
+.dashboard-right tr:hover {
+    background-color: #f8f9fa;
+}
+
+/* Button styling */
+.addbtn {
+    background: #4CAF50;
+    color: white;
+    border: none;
+    padding: 0.5rem 1.5rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background-color 0.2s;
+}
+
+.addbtn:hover {
+    background: #3e8e41;
+}
+
+.dashboard-right-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.dashboard-right h2 {
+    margin: 0;
+    color: #333;
+    font-size: 24px;
+}
+
+.dashboard-right table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+
+.dashboard-right th, .dashboard-right td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: center;
+}
+
+.dashboard-right th {
+    background-color: #4CAF50;
+    color: white;
+}
+
+/* Buttons Styling */
+.addbtn {
+    border: 2px solid #4CAF50;
+    color: #fff;
+    background: #4CAF50;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: 500;
+    font-size: 14px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
+}
+
+.addbtn:hover {
+    background: #3e8e41;
+    border-color: #3e8e41;
+}
+.btn-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 20px;
+    gap: 15px;
+}
+
+.btn {
+    border: 2px solid #fff;
+    color: white;
+    background: transparent;
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: 0.3s;
+    box-shadow: none;
+    width: 232px;
+    height: 40px;
+}
+
+.btn:hover {
+    background-color: #4CAF50;
+    color: white;
+}
+
+.logout-btn {
+    background-color: white;
+    color: #4CAF50;
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: 0.3s;
+    text-align: center;
+    width: 200px;
+}
+
+.logout-btn:hover {
+    background: darkred;
+}
+
+/* Vehicle Modal Styling */
+.vehiclemodal {
+    display: none;
+    position: fixed;
+    z-index: 1;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.4);
+}
+
+.vehiclemodal-content {
+    background-color: white;
+    margin: auto;
+    padding: 20px;
+    width: 40%;
+    max-width: 500px;
+    max-height: 90vh;
+    overflow-y: auto;
+    border-radius: 10px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+}
+
+.close {
+    float: right;
+    font-size: 24px;
+    cursor: pointer;
+}
+
+.modal {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+}
+
+.modal-content {
+    background: white;
+    padding: 20px;
+    width: 40%;
+    max-width: 500px;
+    max-height: 90vh;
+    overflow-y: auto;
+    border-radius: 10px;
+    text-align: center;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.modal-content h2 {
+    margin-bottom: 15px;
+    font-size: 20px;
+    color: #333;
+}
+
+.modal-content label {
+    display: block;
+    font-weight: bold;
+    margin-top: 10px;
+    text-align: left;
+    width: 90%;
+    color: #333;
+}
+
+.modal-content input {
+    width: 90%;
+    padding: 8px;
+    margin: 10px 0;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+.save-btn {
+    background: #4CAF50;
+    color: white;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+.save-btn:hover {
+    background: #45a049;
+}
+
+.button-group {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.close-btn {
+    background: #ff4444;
+    color: white;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.close-btn:hover {
+    background: #cc0000;
+}
+
+.vehiclemodal-content h3 {
+    text-align: left;
+    margin-top: 20px;
+    margin-bottom: 10px;
+    color: #333;
+    font-size: 18px;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 5px;
+}
+
+.vehiclemodal-content .form-group {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    margin-bottom: 15px;
+}
+
+.vehiclemodal-content .form-group label {
+    margin-bottom: 5px;
+    font-weight: bold;
+    color: #333;
+}
+
+.vehiclemodal-content .form-group input,
+.vehiclemodal-content .form-group select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    box-sizing: border-box;
+}
+.chargingCost {
+    margin-bottom: 5px;
+    font-weight: bold;
+    color: #333;
+}
+.add-vehicle-btn {
+    width: 100%;
+    padding: 15px;
+    font-size: 18px;
+    margin-top: 20px;
+}
+
+.invalid-input {
+    border: 2px solid red !important;
+}
+
+.error-message {
+    color: red;
+    font-size: 0.85em;
+    margin-top: 5px;
+    margin-bottom: 10px;
+    text-align: left;
+    width: 100%;
+}
+
+.loading {
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+.spinner {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid #fff;
+    border-top: 2px solid transparent;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-left: 10px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+@media (max-width: 1024px) {
+    .dashboard-container {
+        flex-direction: column;
+    }
+    .dashboard-left {
+        width: 100%;
+        border-radius: 0 0 20px 20px;
+        padding: 20px;
+    }
+    .dashboard-right {
+        width: 100%;
+        padding: 20px;
+    }
+    .dashboard-right-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+    }
+    .addbtn {
+        width: 100%;
+    }
+}

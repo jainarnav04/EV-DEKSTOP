@@ -638,31 +638,44 @@ def remove_vehicle():
     if not vehicle_id:
         raise MissingDataError("Missing vehicle ID!")
 
-    station_doc_ref = db.collection("charging_stations").document(station_id)
-    if not station_doc_ref.get().exists:
-        raise NotFoundError("Charging station not found!")
-
-    vehicle_doc_ref = station_doc_ref.collection("vehicles").document(vehicle_id)
-    if not vehicle_doc_ref.get().exists:
-        raise NotFoundError(f"Vehicle with ID {vehicle_id} not found under station {station_id}!")
-
     try:
-        # Remove the vehicle
+        station_doc_ref = db.collection("charging_stations").document(station_id)
+        if not station_doc_ref.get().exists:
+            raise NotFoundError("Charging station not found!")
+
+        vehicle_doc_ref = station_doc_ref.collection("vehicles").document(vehicle_id)
+        if not vehicle_doc_ref.get().exists:
+            raise NotFoundError("Vehicle not found!")
+
+        # Get vehicle data before deletion for response
+        vehicle_data = vehicle_doc_ref.get().to_dict()
+        
+        # Delete the vehicle document
         vehicle_doc_ref.delete()
-        # Calculate available slots dynamically after removal (do not update Firestore)
-        vehicles_ref = station_doc_ref.collection("vehicles")
-        charging_count = sum(1 for doc in vehicles_ref.stream() if doc.to_dict().get('status', '').upper() == 'CHARGING')
+        
+        # Update the station's charging count if needed
+        if vehicle_data.get('status', '').upper() == 'CHARGING':
+            # Get the current charging count
+            station_data = station_doc_ref.get().to_dict() or {}
+            current_charging = station_data.get('charging_count', 0)
+            if current_charging > 0:
+                station_doc_ref.update({
+                    'charging_count': firestore.Increment(-1)
+                })
+
         return jsonify({
-            "message": "Registration successful!",
-            "station_id": station_id,
-            "email": email,
-            "name": name
-        }), 201
+            "message": "Vehicle removed successfully!",
+            "success": True
+        }), 200
+        
     except Exception as e:
         import traceback
         print(f"An error occurred during remove_vehicle: {e}")
         print(traceback.format_exc())
-        raise InvalidUsage(f"An error occurred while removing the vehicle: {str(e)}", status_code=500)
+        return jsonify({
+            "error": f"An error occurred while removing the vehicle: {str(e)}",
+            "success": False
+        }), 500
 
 def calculate_charging_time(initial_battery_level, target_battery_level, battery_capacity_kWh, charging_type):
     """

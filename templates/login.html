@@ -94,18 +94,22 @@
 
         .form-box {
             position: absolute;
+            top: 0;
             right: 0;
             width: 50%;
             height: 100%;
             background: #fff;
             display: flex;
             flex-direction: column;
-            justify-content: space-around;
+            justify-content: center;
+            align-items: center;
             color: #333;
             text-align: center;
-            padding: 40px 20px;
+            padding: 20px 40px;
             z-index: 1;
             transition: .6s ease-in-out 1.2s, visibility 0s 1s;
+            overflow-y: auto;
+            box-sizing: border-box;
         }
 
         .container.active .form-box { 
@@ -545,12 +549,37 @@
 
         .success-message {
             display: none;
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: calc(100% - 40px);
+            max-width: 400px;
             color: #4CAF50;
             text-align: center;
-            margin-top: 15px;
-            padding: 10px;
-            background: rgba(76, 175, 80, 0.1);
+            padding: 12px 16px;
+            background: rgba(255, 255, 255, 0.95);
             border-radius: 8px;
+            box-sizing: border-box;
+            word-wrap: break-word;
+            font-size: 14px;
+            line-height: 1.4;
+            border: 1px solid rgba(76, 175, 80, 0.3);
+            z-index: 2;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            animation: slideUp 0.3s ease-out;
+            margin-top: 20px;
+        }
+        
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translate(-50%, 20px);
+            }
+            to {
+                opacity: 1;
+                transform: translate(-50%, 0);
+            }
         }
     </style>
     <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
@@ -635,10 +664,10 @@
                 </div>
                 <div class="input-box">
                     <div class="input-content">
-                        <input type="email" name="email" placeholder="Email" required>
+                        <input type="email" id="email" name="email" required placeholder="Email" onblur="checkEmailExists(this.value)">
                         <i class='bx bxs-envelope'></i>
                     </div>
-                    <div class="error-message">Please enter a valid email address</div>
+                    <div id="emailError" class="error-message"></div>
                 </div>
                 <div class="input-box">
                     <div class="input-content">
@@ -655,7 +684,12 @@
                     <div class="error-message">Please create a strong access key</div>
                 </div>
                 <button type="submit" class="btn btn-register">Register</button>
-                <div id="registerSuccessMessage" class="success-message" style="display: none;"></div>
+                <div id="registerSuccessMessage" class="success-message" style="display: none;">
+                    <p>✅ Registration successful!</p>
+                    <p>Your Station ID: <strong id="successStationId"></strong></p>
+                    <p>Keep your credentials safe!</p>
+                    <p>You can now login with your credentials.</p>
+                </div>
             </form>
         </div>
 
@@ -955,6 +989,73 @@
                     }
                 });
             });
+
+            // Email validation function
+            async function validateEmail(email) {
+                if (!email) return false;
+                
+                try {
+                    const response = await fetch('/check-email', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ email: email })
+                    });
+                    
+                    const data = await response.json();
+                    return data.exists === true;
+                } catch (error) {
+                    console.error('Error checking email:', error);
+                    return false;
+                }
+            }
+
+            // Add email validation on blur
+            const emailInput = document.querySelector('input[name="email"]');
+            if (emailInput) {
+                emailInput.addEventListener('blur', async function() {
+                    const email = this.value.trim();
+                    const emailError = document.getElementById('emailError');
+                    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                    
+                    if (!email) {
+                        emailError.textContent = 'Email is required';
+                        emailError.style.display = 'block';
+                        this.parentElement.classList.add('error');
+                        return;
+                    }
+                    
+                    if (!emailRegex.test(email)) {
+                        emailError.textContent = 'Please enter a valid email address';
+                        emailError.style.display = 'block';
+                        this.parentElement.classList.add('error');
+                        return;
+                    }
+                    
+                    // Show loading state
+                    emailError.textContent = 'Checking email availability...';
+                    emailError.style.display = 'block';
+                    emailError.style.color = '#666';
+                    
+                    const emailExists = await validateEmail(email);
+                    
+                    if (emailExists) {
+                        emailError.textContent = 'This email is already registered';
+                        emailError.style.color = '#ff4444';
+                        this.parentElement.classList.add('error');
+                    } else {
+                        emailError.style.display = 'none';
+                        this.parentElement.classList.remove('error');
+                    }
+                });
+                
+                // Clear error on input
+                emailInput.addEventListener('input', function() {
+                    document.getElementById('emailError').style.display = 'none';
+                    this.parentElement.classList.remove('error');
+                });
+            }
 
             // Real-time validation - only apply error on blur if empty, or on input if already in error state
             inputs.forEach(input => {

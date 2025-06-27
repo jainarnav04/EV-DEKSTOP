@@ -5,375 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Charging Station Dashboard</title>
     <script async defer src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_api_key }}&libraries=places&callback=initMap"></script>
-    <style>
-        /* Background similar to login page */
-html, body {
-    height: 100%;
-    width: 100%;
-    min-height: 100vh;
-    min-width: 100vw;
-    margin: 0;
-    padding: 0;
-    overflow: auto;
-    background: linear-gradient(90deg, #e2e2e2, #c9ffd6);
-    font-family: 'Poppins', sans-serif;
-    color: white;
-}
-
-body {
-    display: block; /* Remove flex from body */
-}
-
-/* Main Dashboard Container */
-.dashboard-container {
-    display: flex;
-    width: 100vw;
-    min-width: 100vw;
-    height: 100vh;
-    min-height: 100vh;
-    background: white;
-    border-radius: 0px;
-    box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.2);
-    box-sizing: border-box;
-}
-
-/* Left Side: Charging Station Details */
-.dashboard-left {
-    width: 28%;
-    background: #4CAF50; /* Green box */
-    padding: 32px 24px;
-    color: white;
-    border-radius: 0px 120px 120px 0px;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-start;
-    text-align: left;
-    box-shadow: 0 0 30px rgba(0, 0, 0, .2);
-    overflow-y: auto;
-}
-
-.dashboard-left h2 {
-    margin-bottom: 40px; /* Removed negative margin-top */
-    text-align: center;
-    font-size: 30px;
-}
-
-.dashboard-left p {
-    margin: 10px 10px;
-    font-size: 16px;
-}
-
-/* Right Side: Vehicle List */
-.dashboard-right {
-    width: 72%;
-    padding: 32px 32px 32px 24px;
-    background: #fff;
-    color: black;
-    border-radius: 0 16px 16px 0;
-    min-height: 100vh;
-    box-sizing: border-box;
-}
-
-.dashboard-right table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 10px;
-}
-
-.dashboard-right th, .dashboard-right td {
-    border: 1px solid #ddd;
-    padding: 8px;
-    text-align: center;
-}
-
-.dashboard-right th {
-    background-color: #4CAF50;
-    color: white;
-}
-
-/* Buttons Styling */
-.addbtn{
-    border: 2px solid #fff;
-    color: white;
-    background: #4CAF50;
-    padding: 10px 20px;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: 0.3s;
-    box-shadow: none;
-    width: 232px;
-    height: 40px;
-    position: absolute; 
-    margin-top: 10px;
-    top: 4%;
-    left: 81.5%;
-
-}
-.btn-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center; /* Center buttons horizontally */
-    margin-top: 20px; /* Space from map */
-    gap: 15px; /* Space between buttons */
-}
-
-.btn {
-    border: 2px solid #fff;
-    color: white;
-    background: transparent;
-    padding: 10px 20px;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: 0.3s;
-    box-shadow: none;
-    width: 232px;
-    height: 40px;
-    /* Removed absolute positioning */
-}
-
-.btn:hover {
-    background-color: #4CAF50;
-    color: white;
-}
-
-.logout-btn {
-    /* Removed absolute positioning */
-    background-color: white;
-    color: #4CAF50;
-    padding: 10px 20px;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: 0.3s;
-    text-align: center;
-    width: 200px;
-}
-
-.logout-btn:hover {
-    background: darkred;
-}
-
-
-/* Vehicle Modal Styling */
-.vehiclemodal {
-    display: none;
-    position: fixed;
-    z-index: 1;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.4);
-}
-
-.vehiclemodal-content {
-    background-color: white;
-    margin: auto;
-    padding: 20px;
-    width: 40%;
-    max-width: 500px;
-    max-height: 90vh;
-    overflow-y: auto;
-    border-radius: 10px;
-    text-align: center;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-start;
-}
-
-.close {
-    float: right;
-    font-size: 24px;
-    cursor: pointer;
-}
-
-/* Center Modal */
-
-.modal {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.5);
-}
-
-/* Modal Content */
-.modal-content {
-    background: white;
-    padding: 20px;
-    width: 40%;
-    max-width: 500px;
-    max-height: 90vh;
-    overflow-y: auto;
-    border-radius: 10px;
-    text-align: center;
-    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
-}
-
-/* Modal Title */
-.modal-content h2 {
-    margin-bottom: 15px;
-    font-size: 20px;
-    color: #333;
-}
-
-.modal-content label {
-    display: block; /* Ensures labels are above inputs */
-    font-weight: bold;
-    margin-top: 10px;
-    text-align: left;
-    width: 90%;
-    color: #333;
-}
-
-/* Form Fields */
-.modal-content input {
-    width: 90%;
-    padding: 8px;
-    margin: 10px 0;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-}
-
-/* Save Button */
-.save-btn {
-    background: #4CAF50;
-    color: white;
-    padding: 10px 15px;
-    border: none;
-    border-radius: 5px;
-    font-size: 16px;
-    cursor: pointer;
-}
-
-.save-btn:hover {
-    background: #45a049;
-}
-
-/* Add these styles to your existing CSS */
-.button-group {
-    display: flex;
-    justify-content: center;
-    gap: 10px;
-    margin-top: 20px;
-}
-
-.close-btn {
-    background: #ff4444;
-    color: white;
-    padding: 10px 15px;
-    border: none;
-    border-radius: 5px;
-    font-size: 16px;
-    cursor: pointer;
-    transition: background-color 0.3s;
-}
-
-.close-btn:hover {
-    background: #cc0000;
-}
-
-/* New styles for Add Vehicle modal alignment and headings */
-.vehiclemodal-content h3 {
-    text-align: left;
-    margin-top: 20px;
-    margin-bottom: 10px;
-    color: #333;
-    font-size: 18px;
-    border-bottom: 1px solid #eee;
-    padding-bottom: 5px;
-}
-
-.vehiclemodal-content .form-group {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    margin-bottom: 15px;
-}
-
-.vehiclemodal-content .form-group label {
-    margin-bottom: 5px;
-    font-weight: bold;
-    color: #333;
-}
-
-
-.vehiclemodal-content .form-group input,
-.vehiclemodal-content .form-group select {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    box-sizing: border-box; /* Include padding in width */
-}
-.chargingCost
-{
-    margin-bottom: 5px;
-    font-weight: bold;
-    color: #333;
-}
-.add-vehicle-btn {
-    width: 100%;
-    padding: 15px;
-    font-size: 18px;
-    margin-top: 20px;
-}
-
-.invalid-input {
-    border: 2px solid red !important;
-}
-
-.error-message {
-    color: red;
-    font-size: 0.85em;
-    margin-top: 5px;
-    margin-bottom: 10px;
-    text-align: left;
-    width: 100%;
-}
-
-.loading {
-    opacity: 0.5;
-    pointer-events: none;
-}
-
-.spinner {
-    display: inline-block;
-    width: 16px;
-    height: 16px;
-    border: 2px solid #fff;
-    border-top: 2px solid transparent;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-    margin-left: 10px;
-}
-
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-
-@media (max-width: 768px) {
-    .dashboard-container {
-        flex-direction: column;
-    }
-    .dashboard-left, .dashboard-right {
-        width: 100%;
-        border-radius: 0;
-    }
-    .dashboard-left {
-        padding: 20px;
-    }
-    .addbtn {
-        position: static;
-        margin: 10px auto;
-    }
-}
-
-    </style>
+    <link rel="stylesheet" href="/static/dashboard.css">
 </head>
 <body>
     <div class="dashboard-container">
@@ -384,7 +16,6 @@ body {
             <p id="charging-type-display"><strong>Charging Type:</strong> {{ station.chargingType }}</p>
             <p id="location-display"><strong>Location:</strong> {{ station.location }}</p>
             <p id="total-slots-display"><strong>Total Slots:</strong> {{ station.total_slots }}</p>
-
             <p id="charging-rate-display"><strong>Charging Rate:</strong> ₹{{ station.charging_rate }} per kWh</p>
 
             <div id="slot-warning" style="display: none; color: #ff4444; margin: 10px 0; padding: 10px; background-color: #ffebee; border-radius: 5px;">
@@ -395,15 +26,16 @@ body {
 
             <div class="btn-container">
                 <button onclick="openModal()" class="btn">Update Information</button>
-                <a href="/" class=" logout-btn">Logout</a>
+                <a href="/" class="logout-btn">Logout</a>
             </div>
         </div>
 
-        <!-- Station Queue Section -->
+        <!-- Right Side: Vehicle List -->
         <div class="dashboard-right">
-            <hr>
-            <h2>Currently Charging Vehicles</h2>
-            <button onclick="openVehicleModal()" class="addbtn">Add Vehicle</button>
+            <div class="dashboard-right-header">
+                <h2>Currently Charging Vehicles</h2>
+                <button onclick="openVehicleModal()" class="addbtn">Add Vehicle</button>
+            </div>
 
             <table>
                 <thead>
@@ -461,7 +93,6 @@ body {
                     {% endfor %}
                 </tbody>
             </table>
-        </div>
     </div>
 
     <!-- Booking Result Modal -->
@@ -530,7 +161,7 @@ body {
 
             <div class="chargingCost" id="chargingEstimate" style="display: none; margin-top: 15px; ; padding: 10px; background:rgba(0, 0, 0, .2); border-radius: 5px;">
                 <h4>Charging Estimates</h4>
-                <p>Estimated Time: <span id="estimatedTime">-</span></p>
+                <p>Estimated Time: <span id="estimatedTime">-</span>min</p>
                 <p>Estimated Cost: ₹<span id="estimatedCost">-</span></p>
                 <p>Estimated Final Battery: <span id="estimatedFinalBattery">-</span>%</p>
             </div>
@@ -841,11 +472,23 @@ body {
 
     // Open the Add Vehicle Modal
     function openVehicleModal() {
-        document.getElementById("vehicleModal").style.display = "flex";
-        trapFocus(document.getElementById("vehicleModal"));
-        // Hide all error messages and reset invalid input styles
-        document.querySelectorAll('#vehicleModal .error-message').forEach(el => el.style.display = 'none');
-        document.querySelectorAll('#vehicleModal .invalid-input').forEach(el => el.classList.remove('invalid-input'));
+        document.getElementById('vehicleModal').style.display = 'flex';
+        document.getElementById('vehicleModalTitle').textContent = 'Add Vehicle';
+        document.getElementById('vehicleId').value = '';
+        const form = document.getElementById('addVehicleForm');
+        form.reset();
+        form.setAttribute('data-edit-mode', 'false');
+        
+        // Reset charging inputs and estimates
+        resetChargingInputs();
+        
+        // Focus the first input field for better UX
+        const firstInput = form.querySelector('input:not([type="hidden"])');
+        if (firstInput) {
+            setTimeout(() => firstInput.focus(), 100);
+        }
+        
+        trapFocus(document.getElementById('vehicleModal'));
     }
 
     // Close the Add Vehicle Modal
@@ -1218,23 +861,40 @@ body {
     document.getElementById('vehicleChargingType').addEventListener('change', updateChargingEstimate);
     document.getElementById('chargingTimeMinutes').addEventListener('input', updateChargingEstimate);
 
+    // Reset charging inputs when modal is opened
+    function resetChargingInputs() {
+        const targetInput = document.getElementById('targetBatteryLevel');
+        const timeInput = document.getElementById('chargingTimeMinutes');
+        targetInput.disabled = false;
+        timeInput.disabled = false;
+        targetInput.value = '';
+        timeInput.value = '';
+        document.getElementById('chargingEstimate').style.display = 'none';
+    }
+
     // Disable one input if the other is filled
     function syncChargingInputs() {
         const targetInput = document.getElementById('targetBatteryLevel');
         const timeInput = document.getElementById('chargingTimeMinutes');
+        
+        // Reset both inputs first
+        targetInput.disabled = false;
+        timeInput.disabled = false;
+        
+        // Then apply the appropriate disabled state
         if (targetInput.value && targetInput.value.trim() !== '' && !isNaN(Number(targetInput.value))) {
             timeInput.disabled = true;
-        } else {
-            timeInput.disabled = false;
-        }
-        if (timeInput.value && timeInput.value.trim() !== '' && !isNaN(Number(timeInput.value))) {
+        } else if (timeInput.value && timeInput.value.trim() !== '' && !isNaN(Number(timeInput.value))) {
             targetInput.disabled = true;
-        } else {
-            targetInput.disabled = false;
         }
     }
+    
     document.getElementById('targetBatteryLevel').addEventListener('input', syncChargingInputs);
     document.getElementById('chargingTimeMinutes').addEventListener('input', syncChargingInputs);
+    
+    // Add reset when modal is opened
+    document.getElementById('addVehicleForm').addEventListener('reset', resetChargingInputs);
+    
     // Run once on load
     syncChargingInputs();
     

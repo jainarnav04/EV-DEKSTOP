@@ -141,16 +141,32 @@ def login_register():
             if not name or not email:
                 return jsonify({"error": "Missing station name or email!"}), 400
 
+            # Check if station ID already exists
             if doc_ref.get().exists:
                 return jsonify({"error": "Station ID already exists!"}), 400
+                
+            # Check if email is already registered (case-insensitive)
+            stations_ref = db.collection("charging_stations")
+            email_query = stations_ref.where("email", "==", email.lower().strip()).limit(1)
+            email_docs = list(email_query.stream())
+            
+            if email_docs:
+                return jsonify({"error": "This email is already registered with another station!"}), 400
 
+            # Create new station
             doc_ref.set({
                 "station_id": station_id,
                 "access_key": access_key,
                 "name": name,
-                "email": email
+                "email": email.lower().strip()
             })
-            return jsonify({"message": "Registration successful!"}), 201
+            
+            return jsonify({
+                "message": "Registration successful!",
+                "station_id": station_id,
+                "email": email.lower().strip(),
+                "name": name
+            }), 201
 
         return jsonify({"error": "Invalid action!"}), 400
 
@@ -179,7 +195,7 @@ def reset_access_key():
             import secrets
             from datetime import timezone
             otp = str(secrets.randbelow(900000) + 100000)
-            # Store OTP and expiration (5 min from now) in Firestore
+            # Store OTP with expiration time (5 minutes from now)
             otp_expiry = datetime.now(timezone.utc) + timedelta(minutes=5)
             doc_ref.update({
                 'reset_otp': otp,
@@ -636,7 +652,12 @@ def remove_vehicle():
         # Calculate available slots dynamically after removal (do not update Firestore)
         vehicles_ref = station_doc_ref.collection("vehicles")
         charging_count = sum(1 for doc in vehicles_ref.stream() if doc.to_dict().get('status', '').upper() == 'CHARGING')
-        return jsonify({"message": "Vehicle removed successfully!"}), 200
+        return jsonify({
+            "message": "Registration successful!",
+            "station_id": station_id,
+            "email": email,
+            "name": name
+        }), 201
     except Exception as e:
         import traceback
         print(f"An error occurred during remove_vehicle: {e}")
@@ -953,7 +974,6 @@ def station_queue(station_id):
         ], key=lambda x: x['start_time'])
     return jsonify({"slots": result})
 
-
 @app.route("/verify-otp", methods=["POST"])
 def verify_otp():
     data = request.json
@@ -971,7 +991,7 @@ def verify_otp():
     stored_otp = station_data.get("reset_otp")
     otp_expiry = station_data.get("reset_otp_expiry")
     if not stored_otp or not otp_expiry:
-        return jsonify({"success": False, "message": "OTP not requested or expired."}), 400
+        return jsonify({"success": False, "message": "OTP not found. Please request a new OTP."}), 400
 
     # Convert Firestore timestamp to datetime if needed
     if hasattr(otp_expiry, 'to_datetime'):
@@ -981,12 +1001,19 @@ def verify_otp():
         otp_expiry = datetime.fromtimestamp(otp_expiry['seconds'], tz=timezone.utc)
 
     if otp != stored_otp:
-        return jsonify({"success": False, "message": "Invalid OTP."}), 400
+        return jsonify({
+            "success": False, 
+            "message": "The OTP you entered is incorrect. Please check and try again."
+        }), 400
     from datetime import timezone
-    if datetime.now(timezone.utc) > otp_expiry:
-        return jsonify({"success": False, "message": "OTP expired."}), 400
+    current_time = datetime.now(timezone.utc)
+    if current_time > otp_expiry:
+        return jsonify({
+            "success": False, 
+            "message": f"This OTP has expired. Please request a new OTP."
+        }), 400
 
-    # Update access key and clear OTP
+    # Update access key and clear OTP fields
     doc_ref.update({
         'access_key': new_access_key,
         'reset_otp': firestore.DELETE_FIELD,

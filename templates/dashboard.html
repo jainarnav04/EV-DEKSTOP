@@ -33,7 +33,7 @@
         <!-- Right Side: Vehicle List -->
         <div class="dashboard-right">
             <div class="dashboard-right-header">
-                <h2>Currently Charging Vehicles</h2>
+                <h2>Current Vehicles</h2>
                 <button onclick="openVehicleModal()" class="addbtn">Add Vehicle</button>
             </div>
 
@@ -48,7 +48,6 @@
                         <th>Charging Type</th>
                         <th>Battery Capacity</th>
                         <th>Initial Battery</th>
-                        <th>Target Battery</th>
                         <th>Estimated Charge %</th>
                         <th>Charging Time</th>
                         <th>Wait Time</th>
@@ -68,7 +67,6 @@
                         <td>{{ vehicle.chargingType }}</td>
                         <td>{{ vehicle.battery_capacity }} kWh</td>
                         <td>{{ vehicle.initial_battery_level }}%</td>
-                        <td>{% if vehicle.target_battery_level is not none and vehicle.target_battery_level != '' %}{{ vehicle.target_battery_level }}%{% else %}N/A{% endif %}</td>
                         <td>{% if vehicle.estimated_final_battery is not none %}{{ vehicle.estimated_final_battery }}%{% else %}N/A{% endif %}</td>
                         <td>
                             {% if vehicle.charging_time_minutes >= 60 %}
@@ -832,7 +830,8 @@
             const chargingCost = (usableEnergy / efficiency) * chargingRate;
             document.getElementById('estimatedTime').textContent = Math.round(chargingTime);
             document.getElementById('estimatedCost').textContent = Math.round(chargingCost);
-            document.getElementById('estimatedFinalBattery').textContent = Math.round(finalBattery * 10) / 10;
+            // Round to nearest whole number
+            document.getElementById('estimatedFinalBattery').textContent = Math.round(finalBattery);
             document.getElementById('chargingEstimate').style.display = 'block';
         // Only use target battery mode if user entered a value and chargingTime is blank or NaN
         } else if (!isNaN(targetLevel) && targetLevel > initialLevel && targetLevel <= 100 && (isNaN(chargingTime) || chargingTime === "") && chargingType && !isNaN(batteryCapacity) && !isNaN(initialLevel)) {

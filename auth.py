@@ -403,7 +403,8 @@ def estimate_final_battery(initial_battery_level, charging_time_minutes, battery
     percent_added = (energy_added / battery_capacity_kWh) * 100
     final_percent = initial_battery_level + percent_added
     final_percent = min(max(final_percent, 0), 100)
-    return round(final_percent, 1)
+    # Round to nearest whole number for consistency with frontend
+    return round(final_percent)
 
 @app.route("/add_vehicle", methods=["POST"])
 def add_vehicle():

@@ -87,7 +87,7 @@
                 </div>
                 <div class="input-box">
                     <div class="input-content">
-                        <input type="email" id="email" name="email" required placeholder="Email" onblur="checkEmailExists(this.value)">
+                        <input type="email" id="email" name="email" required placeholder="Email" >
                         <i class='bx bxs-envelope'></i>
                     </div>
                     <div id="emailError" class="error-message"></div>
@@ -338,18 +338,6 @@
                         } else {
                             inputBox.classList.remove('error');
                         }
-
-                        // Specific validation for email input
-                        if (input.name === 'email' && input.value.trim()) {
-                            const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-                            if (!emailPattern.test(input.value.trim())) {
-                                inputBox.classList.add('error');
-                                inputBox.querySelector('.error-message').textContent = 'Please enter a valid email address';
-                                isValid = false;
-                            } else {
-                                inputBox.classList.remove('error');
-                            }
-                        }
                     });
 
                     if (isValid) {
@@ -408,96 +396,6 @@
                         } finally {
                             submitBtn.classList.remove('loading');
                             submitBtn.textContent = this.classList.contains('login') ? 'Login' : 'Register';
-                        }
-                    }
-                });
-            });
-
-            // Email validation function
-            async function validateEmail(email) {
-                if (!email) return false;
-                
-                try {
-                    const response = await fetch('/check-email', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({ email: email })
-                    });
-                    
-                    const data = await response.json();
-                    return data.exists === true;
-                } catch (error) {
-                    console.error('Error checking email:', error);
-                    return false;
-                }
-            }
-
-            // Add email validation on blur
-            const emailInput = document.querySelector('input[name="email"]');
-            if (emailInput) {
-                emailInput.addEventListener('blur', async function() {
-                    const email = this.value.trim();
-                    const emailError = document.getElementById('emailError');
-                    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                    
-                    if (!email) {
-                        emailError.textContent = 'Email is required';
-                        emailError.style.display = 'block';
-                        this.parentElement.classList.add('error');
-                        return;
-                    }
-                    
-                    if (!emailRegex.test(email)) {
-                        emailError.textContent = 'Please enter a valid email address';
-                        emailError.style.display = 'block';
-                        this.parentElement.classList.add('error');
-                        return;
-                    }
-                    
-                    // Show loading state
-                    emailError.textContent = 'Checking email availability...';
-                    emailError.style.display = 'block';
-                    emailError.style.color = '#666';
-                    
-                    const emailExists = await validateEmail(email);
-                    
-                    if (emailExists) {
-                        emailError.textContent = 'This email is already registered';
-                        emailError.style.color = '#ff4444';
-                        this.parentElement.classList.add('error');
-                    } else {
-                        emailError.style.display = 'none';
-                        this.parentElement.classList.remove('error');
-                    }
-                });
-                
-                // Clear error on input
-                emailInput.addEventListener('input', function() {
-                    document.getElementById('emailError').style.display = 'none';
-                    this.parentElement.classList.remove('error');
-                });
-            }
-
-            // Real-time validation - only apply error on blur if empty, or on input if already in error state
-            inputs.forEach(input => {
-                input.addEventListener('blur', function() {
-                    const inputBox = this.parentElement;
-                    if (!this.value.trim()) {
-                        inputBox.classList.add('error');
-                    } else {
-                        inputBox.classList.remove('error');
-                    }
-                });
-
-                input.addEventListener('input', function() {
-                    const inputBox = this.parentElement;
-                    if (this.classList.contains('error') || !this.value.trim()) { // Only re-validate if already errored or empty
-                        if (this.value.trim()) {
-                            inputBox.classList.remove('error');
-                        } else {
-                            inputBox.classList.add('error');
                         }
                     }
                 });

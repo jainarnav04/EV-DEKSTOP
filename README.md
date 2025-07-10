@@ -48,7 +48,7 @@ Charging costs are calculated based on:
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/EV-Dekstop.git
+git clone https://github.com/jainarnav04/EV-Dekstop.git
 cd EV-Dekstop
 ```
 

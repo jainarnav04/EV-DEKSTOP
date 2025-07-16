@@ -136,10 +136,10 @@ def login_register():
             return jsonify({"error": "Station ID not found!"}), 404
 
         elif action == "register":
-            name = data.get("name")
+            station_id = data.get("station_id")
             email = data.get("email")
-            if not name or not email:
-                return jsonify({"error": "Missing station name or email!"}), 400
+            if not station_id or not email:
+                return jsonify({"error": "Missing station ID or email!"}), 400
 
             # Check if station ID already exists
             if doc_ref.get().exists:
@@ -157,15 +157,13 @@ def login_register():
             doc_ref.set({
                 "station_id": station_id,
                 "access_key": access_key,
-                "name": name,
                 "email": email.lower().strip()
             })
             
             return jsonify({
                 "message": "Registration successful!",
                 "station_id": station_id,
-                "email": email.lower().strip(),
-                "name": name
+                "email": email.lower().strip()
             }), 201
 
         return jsonify({"error": "Invalid action!"}), 400

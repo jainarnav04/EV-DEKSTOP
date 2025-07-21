@@ -7,3 +7,4 @@ itsdangerous==2.1.2
 click==8.1.7
 MarkupSafe==2.1.3 
 sendgrid
+apscheduler==3.9.1

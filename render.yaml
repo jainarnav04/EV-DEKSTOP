@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: easy-vahan-web
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn auth:app
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.9.0
+      - key: FLASK_APP
+        value: auth.py
+      - key: FLASK_ENV
+        value: production
+    plan: free
+
+  - type: worker
+    name: easy-vahan-scheduler
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python scheduler.py
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.9.0
+    plan: free

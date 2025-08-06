@@ -1,0 +1,680 @@
+:root {
+    --primary-green: #2ECC71; /* Emerald Green */
+    --dark-green: #27AE60;    /* Nephritis Green */
+    --light-green: #D4EDDA;   /* Light Mint Green */
+    --text-color: #333;
+    --white-color: #fff;
+    --bg-dark: #1E4620; /* Darker green for sections */
+    --btw-green: #52cf86;
+    --lemen-green: #02fd135d;
+}
+
+body {
+    margin: 0;
+    font-family: Cambria, Cochin, Georgia, Times, serif, sans-serif;
+    background-color: var(--white-color);
+    color: var(--text-color);
+
+}
+
+.navbar::after {
+    content: '';
+    display: block;
+    height: 40px; /* Same height as your navbar */
+    visibility: hidden; /* Don't display it visually */
+    pointer-events: none; /* Don't interfere with clicks */
+}
+
+.navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 5%;
+    color: var(--white-color);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    position: fixed;
+    width: 140%;
+    top: 0;          /* Positions it at the very top */
+    left: 0;         /* Positions it at the very left */
+    z-index: 1000;   /* Ensures it stays on top of other content when scrolling */
+    height: 40px;    /* Explicitly set a static height for the navbar */
+    background-color: rgb(253, 252, 252, 0.8); /* Dark green with 90% opacity */
+}
+
+.right-nav-section {
+    display: flex;
+    align-items: center; /* Vertically align items */
+    gap: 20px; /* Space between Business, Drivers, and Sign In/Up */
+    color: var(--bg-dark);
+}
+
+.logo img {
+    height: 65px; /* Adjust as needed */
+}
+
+.nav-button {
+    text-decoration: none;
+    font-size: 20px;
+    color: var(--bg-dark);
+    padding: 8px 15px;
+    border-radius: 5px;
+    transition: background-color 0.3s ease;
+}
+
+.nav-button:hover {
+    background-color: var(--dark-green);
+    color: var(--white-color);
+}
+
+.sign-button {
+    background-color: var(--primary-green);
+    color: var(--white-color);
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s ease;
+}
+
+.sign-button:hover {
+    background-color: var(--dark-green);
+}
+
+
+.hero-section {
+    margin-top: 0;
+    padding-top: calc(40px + 175px); /* Navbar height (70px) + original hero-section top padding (80px) */
+    display: flex;
+    flex-direction: row; /* Default for larger screens */
+    justify-content: right;
+    align-items: center;
+    padding-bottom: 0px;
+    padding-left: 5%;
+    padding-right: 5%;
+    min-height: 70vh;
+    gap: 50px;
+    text-align: right;
+
+    position: relative;
+    overflow: hidden;
+
+    background-image: linear-gradient(rgba(252, 252, 252, 0.37), rgba(255, 255, 255, 0.349)), url('ev.png');
+    background-size: 100%;
+    background-position: center center;
+    background-repeat: no-repeat;
+    background-attachment: scroll; 
+}
+
+.hero-content {
+    margin-top: -250px;
+    flex: auto;
+    max-width: 700px;
+    position: relative;
+    z-index: 1;
+    color: var(--white-color);
+    
+}
+
+.hero-content h1 {
+    font-size: 3em;
+    color: var(--white-color);
+    margin-bottom: 20px;
+    line-height: 1.2;
+}
+
+.hero-content p {
+    font-size: 1.2em;
+    color: var(--white-color);
+    margin-bottom: 30px;
+    line-height: 1.6;
+}
+
+.action-button {
+    background-color: rgpa(0,0,0,1) ;
+    opacity: 80%;
+    color: var(--dark-green);
+    border: 1.5px solid ;
+    padding: 15px 30px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 1.1em;
+    font-weight: bold;
+    transition: background-color 0.3s ease;
+}
+
+.action-button:hover {
+    background-color: var(--dark-green);
+    color: var(--white-color);
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+    .hero-section {
+        flex-direction: column;
+        text-align: center;
+        padding: 50px 5%;
+    }
+
+    .hero-content {
+        max-width: 100%;
+        margin-bottom: 40px;
+    }
+}
+
+@media (max-width: 768px) {
+    .navbar {
+        flex-direction: column;
+        height: auto;
+        padding: 10px;
+    }
+
+    .right-nav-section {
+        flex-direction: column; /* Stack buttons vertically */
+        gap: 10px;
+        margin-top: 10px; /* Space from logo */
+        width: 100%; /* Take full width */
+    }
+
+    .nav-button, .sign-button {
+        width: 80%; /* Make buttons wider on small screens */
+        text-align: center;
+    }
+
+    .hero-content h1 {
+        font-size: 2.2em;
+    }
+
+    .hero-content p {
+        font-size: 1em;
+    }
+}
+
+@media (max-width: 480px) {
+    .sign-button,
+    .action-button {
+        width: 100%;
+        padding: 12px 0;
+        font-size: 1em;
+    }
+
+    .hero-content h1 {
+        font-size: 1.8em;
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* In style.css, modify or add these rules for the driver-features-section */
+
+/* Driver Features Section */
+.driver-features-section {
+    background-color: #cbf0d3;
+    padding: 80px 5%;
+    text-align: center;
+    color: var(--text-color);
+    overflow: hidden; /* Important for containing sliding elements */
+}
+
+.driver-features-section h2 {
+    font-size: 2.5em;
+    margin-top: 0px;
+    margin-bottom: 20px;
+    color: var(--bg-dark);
+    text-align: left;
+}
+
+.driver-features-section p {
+    font-size: 1.5em;
+    margin-top: 0px;
+    margin-bottom: 10px;
+    color: var(--bg-dark);
+    text-align: left;
+}
+
+.phone-and-features-container {
+    position: relative;
+    display: flex;
+    justify-content: center; /* Center the whole container */
+    align-items: center; /* Vertically center items (phone and feature list) */
+    min-height: 600px; /* Adjust height based on phone and feature list height */
+    max-width: 1200px; /* Limit width */
+    margin: 0 auto; /* Center the container itself */
+    gap: 50px; /* Space between phone and features list */
+}
+
+.phone-display-left { /* NEW: Styles for the phone container on the left */
+    flex-shrink: 0; /* Prevent phone from shrinking */
+    width: 650px; /* NEW: Large fixed width for the phone */
+    text-align: center; /* Keep image left-aligned within its container if it doesn't fill */
+}
+
+.phone-display-left img {
+    max-width: 100%; /* Make image responsive within its container */
+    height: auto;
+}
+
+.features-list-right { /* NEW: Container for the feature cards on the right */
+    display: flex;
+    flex-direction: column; /* Stack features vertically */
+    gap: 30px; /* Space between feature cards */
+    align-items: flex-start; /* Align cards to the left within their column */
+    flex-grow: 1; /* Allow this column to take up available space */
+    max-width: 500px; /* Limit the width of the feature column */
+    text-align: left; /* Align text within features to the left */
+}
+
+/* Feature Card Styling */
+.driver-features-section .feature-card {
+    background-color: var(--primary-green);
+    color: var(--white-color);
+    padding: 15px 25px;
+    border-radius: 10px; /* Slightly less rounded than pills */
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    width: 300px; /* Allow width to be determined by content/max-width */
+    text-align: center; /* Ensure text is left-aligned within the card */
+    line-height: 1.3;
+    transition: transform 0.6s ease-out, opacity 0.6s ease-out; /* Animation properties */
+    cursor: default;
+    position: relative; /* For the connecting line pseudo-element */
+
+    /* Initial hidden state for animation */
+    opacity: 0;
+    transform: translateX(50px); /* Start slightly off to the right */
+}
+
+.driver-features-section .feature-card.animate-in { /* Class added by JS to trigger animation */
+    opacity: 1;
+    transform: translateX(0); /* Move to final position */
+}
+
+.driver-features-section .feature-card h3 {
+    margin: 0;
+    font-size: 1.1em;
+    font-weight: bold;
+}
+
+.driver-features-section .feature-card:hover {
+    transform: scale(1.02); /* Subtle scale up on hover */
+    background-color: var(--dark-green);
+}
+
+/* Connecting Lines */
+.driver-features-section .feature-card::before {
+    content: '';
+    position: absolute;
+    background-color: var(--primary-green);
+    height: 2px; /* Thickness of the line */
+    width: 210px; /* Length of the line connecting to the phone */
+    top: 50%; /* Vertical center of the card */
+    right: 100%; /* Start from the left edge of the card */
+    transform: translateY(-50%); /* Center vertically */
+    z-index: -1; /* Place below the card */
+}
+
+
+/* Responsive Adjustments */
+@media (max-width: 1024px) {
+    .phone-and-features-container {
+        flex-direction: column; /* Stack phone and features vertically */
+        gap: 40px;
+        min-height: auto; /* Let height adjust to content */
+    }
+
+    .phone-display-left {
+        width: 100%; /* Allow phone container to take full width */
+        text-align: center; /* Center phone image */
+    }
+
+    .phone-display-left img {
+        max-width: 300px; /* Max width for phone image */
+    }
+
+    .features-list-right {
+        max-width: 100%; /* Allow features list to take full width */
+        align-items: center; /* Center cards horizontally when stacked */
+        text-align: center; /* Center text within cards when stacked */
+    }
+
+    .driver-features-section .feature-card {
+        width: 80%; /* Make cards take more width when stacked */
+        text-align: center; /* Center text within cards */
+    }
+
+    .driver-features-section .feature-card::before {
+        /* Hide lines or reposition if phone is above */
+        display: none; /* Simplest to hide when stacked */
+    }
+}
+
+@media (max-width: 768px) {
+    .phone-display-left img {
+        max-width: 250px; /* Smaller phone for smaller screens */
+    }
+
+    .driver-features-section .feature-card {
+        width: 90%;
+        font-size: 1em;
+    }
+}
+
+@media (max-width: 480px) {
+    .phone-display-left img {
+        max-width: 200px; /* Even smaller phone */
+    }
+}
+
+
+
+
+
+
+
+
+
+/* In style.css, add these new rules at the very end */
+
+/* In style.css, find the Testimonials Section styles and replace/update them */
+
+/* Testimonials Section */
+.testimonials-section {
+    background-image: linear-gradient(rgba(51, 100, 36, 0.753), rgba(51, 100, 36, 0.753)), url('ev2.png');
+    background-size: 100%;
+    background-position: center center;
+    background-repeat: no-repeat;
+    background-attachment: scroll; 
+
+    padding: 80px 5%;
+    text-align: center;
+    color: var(--white-color);
+    position: relative; /* For absolute positioning of dots if needed */
+}
+
+.testimonials-section .section-heading-lg {
+    font-size: 3.5em;
+    color: var(--white-color);
+    margin-bottom: 10px;
+}
+
+.testimonials-section .section-subheading {
+    font-size: 1.2em;
+    color: rgba(255, 255, 255, 0.8);
+    margin-bottom: 50px;
+}
+
+.carousel-container {
+    width: 100%;
+    overflow: hidden; /* Hides cards outside the view */
+    position: relative;
+    padding: 20px 0; /* Vertical padding for potential scaling effect */
+}
+
+
+.carousel-track {
+    display: flex;
+    justify-content: center; /* Center the entire track horizontally initially */
+    align-items: center; /* Vertically align cards */
+    transition: transform 0.8s ease-in-out;
+    padding-bottom: 20px; /* Space inside for shadow */
+    margin: 0 -100%; /* Allows cards to be positioned outside of view if needed */
+}
+
+.testimonial-card {
+    flex-shrink: 0;
+    width: 380px; /* Fixed width for desktop cards - adjust this value for size */
+    background-color: var(--white-color); /* White background for prominence */
+    color: var(--text-color); /* Dark text on white card */
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: 280px; /* Increased height for better content fit */
+    margin: 0 15px; /* Space between cards */
+    transition: transform 0.8s ease-in-out, opacity 0.8s ease-in-out, box-shadow 0.3s ease;
+    cursor: default; /* Indicate draggable */
+}
+
+/* Star Rating Styling */
+.testimonial-card .stars {
+    color: gold;
+    font-size: 1.4em;
+    margin-bottom: 15px;
+    letter-spacing: 2px;
+}
+.testimonial-card .testimonial-text {
+    font-size: 1.1em;
+    line-height: 1.5;
+    margin-bottom: 20px;
+    flex-grow: 1;
+}
+.testimonial-card .testimonial-author {
+    font-weight: bold;
+    font-size: 0.9em;
+    color: var(--text-color); /* Dark text */
+}
+
+/* Active/Peeking Card States (Managed by JavaScript) */
+.testimonial-card.is-active {
+    transform: scale(1.08); /* NEW: Make active card slightly larger */
+    opacity: 1;
+    z-index: 2; /* Ensure active card is on top */
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3); /* More pronounced shadow */
+}
+
+.testimonial-card.is-prev,
+.testimonial-card.is-next {
+    opacity: 0.6; /* Dim side cards */
+    transform: scale(0.9); /* Scale down side cards */
+    z-index: 1;
+    pointer-events: none; /* Disable clicks on dimmed cards */
+}
+
+/* Navigation Dots */
+.carousel-dots {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 30px; /* Space from carousel */
+}
+
+.dot {
+    width: 12px;
+    height: 12px;
+    background-color: rgba(255, 255, 255, 0.4); /* Faded white dot */
+    border-radius: 50%;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.3s ease;
+}
+
+.dot.active {
+    background-color: var(--primary-green); /* Active dot is green */
+    transform: scale(1.2); /* Active dot slightly larger */
+}
+
+/* Responsive adjustments for carousel */
+@media (max-width: 1024px) {
+    .testimonial-card {
+        width: 320px; /* Smaller cards for tablets */
+        min-height: 220px;
+    }
+    .testimonial-card.is-active {
+        transform: scale(1.05); /* Slightly less prominent scaling */
+    }
+    .testimonial-card.is-prev,
+    .testimonial-card.is-next {
+        transform: scale(0.85); /* Slightly less scaled down */
+    }
+}
+
+@media (max-width: 768px) {
+    .testimonials-section .section-heading-lg {
+        font-size: 2.8em;
+    }
+    .testimonials-section .section-subheading {
+        font-size: 1em;
+    }
+    .testimonial-card {
+        width: calc(100% - 40px); /* Full width on mobile (1 card visible) */
+        min-height: 200px;
+        margin: 0 20px; /* Ensure margin applies */
+    }
+    .testimonial-card.is-active {
+        transform: scale(1); /* No scaling on mobile to avoid overflow */
+    }
+    .testimonial-card.is-prev,
+    .testimonial-card.is-next {
+        opacity: 0; /* Hide side cards completely on mobile */
+        transform: scale(0.8);
+    }
+    .carousel-track {
+        justify-content: flex-start; /* Align to start for easier mobile scrolling */
+        padding-bottom: 0; /* Remove padding if not needed */
+    }
+}
+
+
+
+
+
+
+
+.main-footer {
+    color: black;
+    padding: 60px 5%; /* Top/bottom padding, 5% left/right */
+    font-size: 0.9em;
+    
+    background: linear-gradient(135deg, var(--light-green), var(--btw-green), var(--white-color));
+    background-size: 400% 400%; /* Larger background to allow movement */
+    animation: gradientShift 25s ease infinite alternate; /* Apply animation */
+}
+
+.footer-content {
+    display: flex;
+    justify-content: space-between; /* Distribute columns evenly */
+    flex-wrap: wrap; /* Allow columns to wrap on smaller screens */
+    max-width: 1200px; /* Match max-width of other sections */
+    margin: 0 auto 40px auto; /* Center content, add space below before copyright */
+}
+
+.footer-col {
+    flex: 1; /* Allow columns to grow and shrink */
+    min-width: 180px; /* Minimum width before wrapping */
+    margin-bottom: 30px; /* Space between columns when they wrap */
+    padding-right: 20px; /* Space between text in adjacent columns */
+}
+
+.footer-col:last-child {
+    padding-right: 0; /* Remove padding from last column */
+}
+
+.footer-logo img {
+    height: 90px; /* Adjust logo size in footer */
+    margin-bottom: 15px;
+}
+
+.footer-col h4 {
+    font-size: 1.1em;
+    color: var(--dark-green); /* Green headings */
+    margin-bottom: 20px;
+    font-weight: bold;
+}
+
+.footer-col p,
+.footer-col address {
+    font-style: normal;
+    line-height: 1.6;
+    color: rgba(0, 0, 0, 0.856); /* Slightly lighter text for readability */
+}
+
+.footer-col ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.footer-col ul li {
+    margin-bottom: 10px;
+}
+
+.footer-col ul li a {
+    color: rgba(0, 0, 0, 0.712);
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.footer-col ul li a:hover {
+    color: var(--white-color); /* Lighter on hover */
+}
+
+.status-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    background-color: var(--dark-green); /* Green dot */
+    border-radius: 50%;
+    margin-left: 5px;
+    vertical-align: middle;
+}
+
+.footer-bottom {
+    border-top: 1px solid rgba(8, 0, 0, 0.615); /* Subtle separator line */
+    padding-top: 20px;
+    text-align: left;
+    color: rgba(7, 0, 0, 0.61); /* Lighter text for copyright */
+    font-size: 0.8em;
+}
+
+/* Responsive Design for Footer */
+@media (max-width: 768px) {
+    .footer-content {
+        flex-direction: column; /* Stack columns vertically */
+        align-items: center; /* Center items when stacked */
+        text-align: center;
+    }
+
+    .footer-col {
+        min-width: unset; /* Remove min-width when stacked */
+        width: 100%; /* Take full width */
+        padding-right: 0;
+        margin-bottom: 40px; /* More space between stacked columns */
+    }
+
+    .footer-col:last-child {
+        margin-bottom: 0; /* No bottom margin on the very last column */
+    }
+
+    .footer-col ul {
+        margin-top: 10px; /* Add some space above list items */
+    }
+
+    .footer-logo {
+        margin-bottom: 20px; /* Space below logo */
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+

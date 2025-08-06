@@ -1,0 +1,453 @@
+:root {
+    --primary-green: #2ECC71; /* Emerald Green */
+    --dark-green: #27AE60;    /* Nephritis Green */
+    --light-green: #D4EDDA;   /* Light Mint Green */
+    --text-color: #333;
+    --white-color: #fff;
+    --bg-dark: #1E4620; /* Darker green for sections */
+    --btw-green: #52cf86;
+    --lemen-green: #02fd135d;
+}
+
+body {
+    margin: 0;
+    font-family: Cambria, Cochin, Georgia, Times, serif, sans-serif;
+    background-color: var(--white-color);
+    color: var(--text-color);
+
+}
+
+.navbar::after {
+    content: '';
+    display: block;
+    height: 40px; /* Same height as your navbar */
+    visibility: hidden; /* Don't display it visually */
+    pointer-events: none; /* Don't interfere with clicks */
+}
+
+.navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 5%;
+    color: var(--white-color);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    position: fixed;
+    width: 140%;
+    top: 0;          /* Positions it at the very top */
+    left: 0;         /* Positions it at the very left */
+    z-index: 1000;   /* Ensures it stays on top of other content when scrolling */
+    height: 40px;    /* Explicitly set a static height for the navbar */
+    background-color: rgb(253, 252, 252, 0.8); /* Dark green with 90% opacity */
+}
+
+.right-nav-section {
+    display: flex;
+    align-items: center; /* Vertically align items */
+    gap: 20px; /* Space between Business, Drivers, and Sign In/Up */
+    color: var(--bg-dark);
+}
+
+.logo img {
+    height: 65px; /* Adjust as needed */
+}
+
+.nav-button {
+    text-decoration: none;
+    font-size: 20px;
+    color: var(--bg-dark);
+    padding: 8px 15px;
+    border-radius: 5px;
+    transition: background-color 0.3s ease;
+}
+
+.nav-button:hover {
+    background-color: var(--dark-green);
+    color: var(--white-color);
+}
+
+.sign-button {
+    background-color: var(--primary-green);
+    color: var(--white-color);
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s ease;
+}
+
+.sign-button:hover {
+    background-color: var(--dark-green);
+}
+
+.hero-section {
+    margin-top: 0;
+    padding-top: calc(40px + 160px); /* Navbar height (70px) + original hero-section top padding (80px) */
+    display: flex;
+    flex-direction: row; /* Default for larger screens */
+    justify-content: left;
+    align-items: center;
+    padding-bottom: 0px;
+    padding-left: 5%;
+    padding-right: 5%;
+    min-height: 70vh;
+    gap: 50px;
+    text-align: left;
+
+    position: relative;
+    overflow: hidden;
+}
+
+.hero-video{
+    position: absolute;
+    top: 50%; /* */
+    left: 50%; /* */
+    min-width: 100%; /* */
+    min-height: 100%; /* */
+    width: auto; /* */
+    height: auto; /* */
+    z-index: -1; /* Place behind content */
+    transform: translate(-50%, -50%); /* Centers the video */
+    object-fit: cover;
+}
+
+.video-overlay {
+    position: absolute; /* */
+    top: 0; /* */
+    left: 0; /* */
+    width: 100%; /* */
+    height: 100%; /* */
+    background: rgba(0, 0, 0, 0.4); /* Semi-transparent dark overlay */
+    z-index: 0; /* Place between video and content */
+}
+
+@keyframes gradientShift {
+    0% {
+        background-position: 0% 50%;
+    }
+    100% {
+        background-position: 100% 50%;
+    }
+}
+
+.hero-content {
+    margin-top: -150px;
+    flex: 1;
+    max-width: 600px;
+    position: relative;
+    z-index: 1;
+    color: var(--white-color);
+}
+
+.hero-content h1 {
+    font-size: 3em;
+    color: var(--white-color);
+    margin-bottom: 20px;
+    line-height: 1.2;
+}
+
+.hero-content p {
+    font-size: 1.2em;
+    color: var(--white-color);
+    margin-bottom: 30px;
+    line-height: 1.6;
+}
+
+.action-button {
+    background-color: black ;
+    opacity: 80%;
+    color: white;
+    border: 1.5px solid black;
+    padding: 15px 30px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 1.1em;
+    font-weight: bold;
+    transition: background-color 0.3s ease;
+}
+
+.action-button:hover {
+    background-color: var(--dark-green);
+    color: var(--white-color);
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+    .hero-section {
+        flex-direction: column;
+        text-align: center;
+        padding: 50px 5%;
+    }
+
+    .hero-content {
+        max-width: 100%;
+        margin-bottom: 40px;
+    }
+}
+
+@media (max-width: 768px) {
+    .navbar {
+        flex-direction: column;
+        height: auto;
+        padding: 10px;
+    }
+
+    .right-nav-section {
+        flex-direction: column; /* Stack buttons vertically */
+        gap: 10px;
+        margin-top: 10px; /* Space from logo */
+        width: 100%; /* Take full width */
+    }
+
+    .nav-button, .sign-button {
+        width: 80%; /* Make buttons wider on small screens */
+        text-align: center;
+    }
+
+    .hero-content h1 {
+        font-size: 2.2em;
+    }
+
+    .hero-content p {
+        font-size: 1em;
+    }
+}
+
+@media (max-width: 480px) {
+    .sign-button,
+    .action-button {
+        width: 100%;
+        padding: 12px 0;
+        font-size: 1em;
+    }
+
+    .hero-content h1 {
+        font-size: 1.8em;
+    }
+}
+
+.feature-content {
+    text-align: left;
+    margin-top: -50px;
+    padding-bottom: 50px;
+    font-size: 30px;
+    color: black;
+}
+
+.features-section {
+    background-color: #cdf1c3e3; /* Dark green background for the section */
+    padding: 80px 5%; /* Top/bottom padding, left/right 5% padding */
+    text-align: center; /* Center the grid on smaller screens */
+}
+
+.features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); /* 2 columns on desktop, responsive */
+    gap: 30px; /* Space between cards */
+    max-width: 1200px; /* Limit grid width for better readability */
+    margin: 0 auto; /* Center the grid */
+}
+
+.feature-card {
+    background-color: var(--dark-green); /* Slightly lighter dark green for cards */
+    color: var(--white-color);
+    padding: 30px;
+    border-radius: 10px;
+    display: flex;
+    flex-direction: row; /* Icon and text side-by-side */
+    align-items: center; /* Vertically align items */
+    text-align: left; /* Text aligns left within the card */
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    transition: transform 0.3s ease, background-color 0.3s ease;
+}
+
+.feature-card:hover {
+    transform: translateY(-5px); /* Subtle lift effect on hover */
+    background-color:  #67e06d; /* Slightly darker on hover */
+}
+
+.icon-circle {
+    width: 60px;
+    height: 60px;
+    background-color: var(--primary-green); /* Emerald green circle */
+    border-radius: 50%; /* Makes it a circle */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-right: 20px; /* Space between icon and text */
+    flex-shrink: 0; /* Prevent icon from shrinking */
+}
+
+.icon-circle img {
+    width: 35px; /* Size of the icon inside the circle */
+    height: 35px;
+    filter: invert(1); /* If your icons are black, this will make them white */
+                       /* Remove if your icons are already white or colored appropriately */
+}
+
+.feature-card h3 {
+    font-size: 1.4em;
+    margin: 0; /* Remove default margin */
+    line-height: 1.3;
+    color: var(--white-color);
+}
+
+/* Responsive adjustments for the feature grid */
+@media (max-width: 900px) {
+    .features-grid {
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); /* Adjust min width for tablets */
+        gap: 20px;
+    }
+}
+
+@media (max-width: 600px) {
+    .features-grid {
+        grid-template-columns: 1fr; /* Single column on small mobiles */
+        padding: 0 20px; /* Add some horizontal padding to the grid itself */
+    }
+
+    .feature-card {
+        flex-direction: column; /* Stack icon and text vertically on mobile */
+        text-align: center;
+        padding: 25px;
+    }
+
+    .icon-circle {
+        margin-right: 0; /* Remove horizontal margin */
+        margin-bottom: 15px; /* Add vertical margin */
+    }
+
+    .feature-card h3 {
+        font-size: 1.2em;
+    }
+}
+
+
+/* In style.css, add these new rules after your .features-section styles */
+
+.main-footer {
+    color: black;
+    padding: 60px 5%; /* Top/bottom padding, 5% left/right */
+    font-size: 0.9em;
+    
+    background: linear-gradient(135deg, var(--light-green), var(--btw-green), var(--white-color));
+    background-size: 400% 400%; /* Larger background to allow movement */
+    animation: gradientShift 25s ease infinite alternate; /* Apply animation */
+}
+
+.footer-content {
+    display: flex;
+    justify-content: space-between; /* Distribute columns evenly */
+    flex-wrap: wrap; /* Allow columns to wrap on smaller screens */
+    max-width: 1200px; /* Match max-width of other sections */
+    margin: 0 auto 40px auto; /* Center content, add space below before copyright */
+}
+
+.footer-col {
+    flex: 1; /* Allow columns to grow and shrink */
+    min-width: 180px; /* Minimum width before wrapping */
+    margin-bottom: 30px; /* Space between columns when they wrap */
+    padding-right: 20px; /* Space between text in adjacent columns */
+}
+
+.footer-col:last-child {
+    padding-right: 0; /* Remove padding from last column */
+}
+
+.footer-logo img {
+    height: 90px; /* Adjust logo size in footer */
+    margin-bottom: 15px;
+}
+
+.footer-col h4 {
+    font-size: 1.1em;
+    color: var(--dark-green); /* Green headings */
+    margin-bottom: 20px;
+    font-weight: bold;
+}
+
+.footer-col p,
+.footer-col address {
+    font-style: normal;
+    line-height: 1.6;
+    color: rgba(0, 0, 0, 0.856); /* Slightly lighter text for readability */
+}
+
+.footer-col ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.footer-col ul li {
+    margin-bottom: 10px;
+}
+
+.footer-col ul li a {
+    color: rgba(0, 0, 0, 0.712);
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.footer-col ul li a:hover {
+    color: var(--white-color); /* Lighter on hover */
+}
+
+.status-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    background-color: var(--dark-green); /* Green dot */
+    border-radius: 50%;
+    margin-left: 5px;
+    vertical-align: middle;
+}
+
+.footer-bottom {
+    border-top: 1px solid rgba(8, 0, 0, 0.615); /* Subtle separator line */
+    padding-top: 20px;
+    text-align: left;
+    color: rgba(7, 0, 0, 0.61); /* Lighter text for copyright */
+    font-size: 0.8em;
+}
+
+/* Responsive Design for Footer */
+@media (max-width: 768px) {
+    .footer-content {
+        flex-direction: column; /* Stack columns vertically */
+        align-items: center; /* Center items when stacked */
+        text-align: center;
+    }
+
+    .footer-col {
+        min-width: unset; /* Remove min-width when stacked */
+        width: 100%; /* Take full width */
+        padding-right: 0;
+        margin-bottom: 40px; /* More space between stacked columns */
+    }
+
+    .footer-col:last-child {
+        margin-bottom: 0; /* No bottom margin on the very last column */
+    }
+
+    .footer-col ul {
+        margin-top: 10px; /* Add some space above list items */
+    }
+
+    .footer-logo {
+        margin-bottom: 20px; /* Space below logo */
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+

@@ -26,7 +26,7 @@
 
             <div class="btn-container">
                 <button onclick="openModal()" class="btn">Update Information</button>
-                <a href="/" class="logout-btn">Logout</a>
+                <a href="/logout" class="logout-btn">Logout</a>
             </div>
         </div>
 
@@ -44,6 +44,7 @@
                         <th>Slot Number</th>
                         <th>Vehicle Number</th>
                         <th>Estimated Arrival Time</th>
+                        <th>Charging Start Time</th>
                         <th>Estimated Departure Time</th>
                         <th>Charging Type</th>
                         <th>Battery Capacity</th>
@@ -63,6 +64,7 @@
                         <td>{% if vehicle.slot_number %}{{ vehicle.slot_number }}{% else %}N/A{% endif %}</td>
                         <td>{{ vehicle.vehicle_number }}</td>
                         <td>{{ vehicle.arrival_time }}</td>
+                        <td>{% if vehicle.charging_start_time %}{{ vehicle.charging_start_time }}{% else %}N/A{% endif %}</td>
                         <td>{{ vehicle.departure_time }}</td>
                         <td>{{ vehicle.chargingType }}</td>
                         <td>{{ vehicle.battery_capacity }} kWh</td>
@@ -85,7 +87,7 @@
                             </td>
                         <td>₹{{ vehicle.charging_cost }}</td>
                         <td>
-                            <button class="remove-btn" onclick="removeVehicle('{{ vehicle.id }}')">Remove</button>
+                            <button class="remove-btn close-btn" onclick="removeVehicle('{{ vehicle.id }}')">Remove</button>
                         </td>
                     </tr>
                     {% endfor %}
@@ -898,15 +900,19 @@
     syncChargingInputs();
     
 
-    // Function to sort the vehicle table by arrival time
-    function sortVehicleTableByArrivalTime() {
+    // Function to sort the vehicle table by charging start time
+    function sortVehicleTableByChargingStartTime() {
         const tableBody = document.querySelector(".dashboard-right table tbody");
         const rows = Array.from(tableBody.querySelectorAll("tr"));
 
         rows.sort((a, b) => {
-            // Get arrival time as string (e.g., "13:30")
-            const timeA = a.cells[2].textContent.trim();
-            const timeB = b.cells[2].textContent.trim();
+
+            const timeA = a.cells[4].textContent.trim();
+            const timeB = b.cells[4].textContent.trim();
+
+            // Handle "N/A" values by treating them as very large numbers (will be sorted to the end)
+            if (timeA === "N/A") return 1;
+            if (timeB === "N/A") return -1;
 
             // Convert to minutes since midnight for comparison
             const [hA, mA] = timeA.split(":").map(Number);
@@ -1034,6 +1040,35 @@ function closeBookingResultModal() {
 document.addEventListener('DOMContentLoaded', function() {
     fetchAndRenderStationQueue('{{ station.id }}');
 });
+</script>
+<script>
+    function delay(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+    // Get the initial number of vehicles displayed on the page
+    const initialVehicleCount = document.querySelectorAll("#vehicle-table tbody tr").length;
+    let previousData=0;
+    // This function will run on a schedule
+    async function checkForUpdates() {
+        try {
+            // Ask our new API for the latest vehicle count
+            const response = await fetch('/api/vehicle_count');
+            const data = await response.json();
+            if (data.vehicle_count !== undefined  ) {
+                // If the count on the server is different from what's on the page...
+                console.log('Change detected! Refreshing page...');
+                location.reload(); // ...refresh the page!
+            } else {
+                console.log('No changes detected.');
+            }
+            previousData=data.vehicle_count;
+        } catch (error) {
+            console.error('Error checking for updates:', error);
+        }
+    }
+
+    // Run the checkForUpdates function every 20 seconds
+    setInterval(checkForUpdates, 20000*3*2); 
 </script>
 </body>
 </html>

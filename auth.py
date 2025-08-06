@@ -100,8 +100,19 @@ def ev_charging_time(current_percent, target_percent, charger_power_kw, battery_
     charge_time_hours = energy_needed_kwh / (charger_power_kw * charging_efficiency)
     return charge_time_hours
 
-@app.route("/", methods=["GET", "POST"])
+@app.route("/")
+def index():
+    """Render the main index page."""
+    return render_template("index.html")
+
+@app.route("/driver")
+def driver():
+    """Render the driver page."""
+    return render_template("driver.html")
+
+@app.route("/login", methods=["GET", "POST"])
 def login_register():
+    """Handle both login and registration."""
     if request.method == "GET":
         return render_template("login.html")  # Ensure login.html is inside "templates" folder
 
@@ -223,10 +234,8 @@ def update_vehicle_statuses(vehicles_ref):
                     '%Y-%m-%d %H:%M'
                 )
                 if now >= start_time:
-                    batch.update(vehicle_ref, {
-    'status': 'CHARGING',
-    'wait_time_minutes': 0  # As integer, not string
-})
+                    batch.update(vehicle_ref, {'status': 'CHARGING'})
+                    batch.update(vehicle_ref, {'wait_time_minutes': 0})
                     updated_count += 1
             except (ValueError, TypeError) as e:
                 print(f"Error parsing charging time for vehicle {vehicle_doc.id}: {e}")
@@ -949,8 +958,14 @@ def remove_completed_vehicles():
                 except (ValueError, TypeError):
                     # Ignore vehicles with an invalid departure time format
                     continue
-
+@app.route('/logout')
+def logout():
+    """Handle user logout by clearing the session and redirecting to login page."""
+    # Clear the session data
+    session.clear()
+    # Redirect to the login page
+    return redirect(url_for('login_register'))
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host='0.0.0.0', port=port, debug=False)
+    # Run the Flask app
+    app.run(debug=True)
